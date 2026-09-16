@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+functions/node_modules/
+
+# build output
+dist/
+functions/lib/
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+functions/.env
+functions/.env.*
+*serviceAccountKey*.json
+*.pem
+
+# firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+database-debug.log
+
+# editor / os
+.vscode/
+.DS_Store
+Thumbs.db
+.claude/scheduled_tasks.lock
+
+# logs
+npm-debug.log*
