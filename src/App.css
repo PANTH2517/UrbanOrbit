@@ -1,0 +1,16 @@
+/* filepath: src/App.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background: #f0f0f0;
+}
+.issue-tracker-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}

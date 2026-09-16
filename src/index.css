@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------
+   UrbanOrbit design system - "orbital command center"
+   Dark space canvas, glowing cyan/violet accents, glass panels, motion.
+--------------------------------------------------------------------- */
+
+:root {
+  --uo-bg: #05070f;
+  --uo-bg-elevated: #0a0e1f;
+  --uo-panel: rgba(15, 20, 40, 0.55);
+  --uo-panel-border: rgba(125, 170, 255, 0.14);
+  --uo-cyan: #38f2ff;
+  --uo-blue: #4d7bff;
+  --uo-violet: #a259ff;
+  --uo-pink: #ff5ec4;
+  --uo-text: #eaf1ff;
+  --uo-text-dim: #93a2c9;
+}
+
+@keyframes uo-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(2deg); }
+}
+
+@keyframes uo-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes uo-orbit-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes uo-pulse-glow {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+@keyframes uo-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes uo-twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+@keyframes uo-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes uo-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-uo-float { animation: uo-float 6s ease-in-out infinite; }
+.animate-uo-orbit { animation: uo-orbit 20s linear infinite; }
+.animate-uo-orbit-slow { animation: uo-orbit 40s linear infinite; }
+.animate-uo-orbit-reverse { animation: uo-orbit-reverse 30s linear infinite; }
+.animate-uo-pulse-glow { animation: uo-pulse-glow 2.4s ease-in-out infinite; }
+.animate-uo-twinkle { animation: uo-twinkle 3s ease-in-out infinite; }
+
+.uo-gradient-text {
+  background: linear-gradient(90deg, var(--uo-cyan), var(--uo-blue), var(--uo-violet));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: uo-shimmer 6s linear infinite;
+}
+
+.uo-panel {
+  background: var(--uo-panel);
+  border: 1px solid var(--uo-panel-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.uo-panel-glow {
+  position: relative;
+}
+.uo-panel-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg, rgba(56, 242, 255, 0.5), rgba(162, 89, 255, 0.5), transparent 70%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.uo-panel-glow:hover::before { opacity: 1; }
+
+.uo-glow-btn {
+  box-shadow: 0 0 0 rgba(56, 242, 255, 0);
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+.uo-glow-btn:hover {
+  box-shadow: 0 0 24px rgba(56, 242, 255, 0.45), 0 0 48px rgba(162, 89, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Dark-mode Leaflet tiles: the free OSM tile source only ships a light
+   basemap, so we invert/recolor it via CSS - a standard, zero-cost trick. */
+.uo-dark-tiles .leaflet-tile-pane {
+  filter: invert(94%) hue-rotate(180deg) brightness(1.15) contrast(0.85) saturate(1.1);
+}
+.uo-dark-tiles .leaflet-container {
+  background: #0a0e1f;
+}
+.uo-dark-tiles .leaflet-marker-icon,
+.uo-dark-tiles .leaflet-popup,
+.uo-dark-tiles .leaflet-control {
+  filter: none;
+}
+
+::selection {
+  background: rgba(56, 242, 255, 0.3);
+  color: #fff;
+}
+
+body {
+  background: var(--uo-bg);
+}
