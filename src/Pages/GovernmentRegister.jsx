@@ -6,7 +6,7 @@ import { Input } from "../Components/ui/input";
 import { Label } from "../Components/ui/label";
 import { Alert, AlertDescription } from "../Components/ui/alert";
 import { Badge } from "../Components/ui/badge";
-import { ClipboardList, Upload, ArrowLeft, AlertCircle, Clock, CheckCircle2, XCircle, KeyRound, Copy, Check } from "lucide-react";
+import { ClipboardList, Upload, ArrowLeft, AlertCircle, Clock, CheckCircle2, XCircle, KeyRound, Copy, Check, RefreshCw, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { auth } from "../firebase";
 import { UploadOfficialDocument } from "../../integrations/Core.jsx";
@@ -27,6 +27,7 @@ export default function GovernmentRegister() {
   const [form, setForm] = useState({ full_name: "", department: "", employee_id: "", phone_number: "" });
   const [file, setFile] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +56,36 @@ export default function GovernmentRegister() {
       cancelled = true;
     };
   }, [navigate]);
+
+  // Custom claims (roles) only update once the client fetches a fresh ID
+  // token - a plain page refresh reuses the cached one until it naturally
+  // expires. This forces a fresh token and routes immediately if it now
+  // carries a role, instead of leaving an approved official stuck here with
+  // no way forward.
+  const handleCheckStatus = async () => {
+    setCheckingStatus(true);
+    setError("");
+    try {
+      const me = await User.refresh();
+      if (me.role === "admin") {
+        navigate("/AdminApprovals");
+        return;
+      }
+      if (me.role === "government_official") {
+        navigate(createPageUrl("GovernmentDashboard"));
+        return;
+      }
+      setApplication(await OfficialApplication.getMine());
+    } catch (err) {
+      setError(err.message || "Could not check status. Please try again.");
+    }
+    setCheckingStatus(false);
+  };
+
+  const handleSignOut = async () => {
+    await User.logout();
+    navigate("/GovernmentLogin");
+  };
 
   const handleCopySeedCommand = async () => {
     const command = `node scripts/admin-cli.js seed-admin ${SUPER_ADMIN_EMAIL}`;
@@ -152,7 +183,19 @@ export default function GovernmentRegister() {
               )}
 
               {application ? (
-                <ApplicationStatus application={application} />
+                <div className="space-y-4">
+                  <ApplicationStatus application={application} />
+                  <Button
+                    type="button"
+                    onClick={handleCheckStatus}
+                    disabled={checkingStatus}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${checkingStatus ? "animate-spin" : ""}`} />
+                    {checkingStatus ? "Checking..." : "Check My Status"}
+                  </Button>
+                </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
@@ -214,10 +257,14 @@ export default function GovernmentRegister() {
                 </form>
               )}
 
-              <div className="text-center">
+              <div className="flex items-center justify-center gap-2">
                 <Button variant="ghost" onClick={() => navigate(createPageUrl("RoleSelection"))}>
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Role Selection
+                </Button>
+                <Button variant="ghost" onClick={handleSignOut} className="text-slate-400 hover:text-red-400">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
                 </Button>
               </div>
             </CardContent>
@@ -245,7 +292,7 @@ function ApplicationStatus({ application }) {
       <Alert className="bg-green-500/10 border-green-400/30">
         <CheckCircle2 className="h-4 w-4 text-green-300" />
         <AlertDescription className="text-green-100">
-          Approved! Sign out and back in (or refresh) to pick up your official access.
+          Approved! Click "Check My Status" below to pick up your official access.
         </AlertDescription>
       </Alert>
     );

@@ -93,7 +93,9 @@ export async function InvokeLLM({ prompt, response_json_schema } = {}) {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.error || `AI request failed (${res.status})`);
+    const err = new Error(data.error || `AI request failed (${res.status})`);
+    err.status = res.status;
+    throw err;
   }
 
   return data.result;

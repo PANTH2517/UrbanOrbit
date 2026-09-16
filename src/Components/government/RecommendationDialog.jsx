@@ -221,27 +221,38 @@ Return your response as a JSON object with exactly three fields: recommendation 
     } catch (err) {
       console.error("AI recommendation error:", err);
       
-      let errorMessage = "Failed to generate AI recommendation. ";
-      
-      if (err.message?.includes('402')) {
+      if (err.status === 402) {
         setError({
           title: "AI Service - Payment Required",
           message: "The AI recommendation service is unavailable due to a billing issue with this application's account. Please contact the application owner to resolve this.",
         });
-      } else if (err.message?.includes('500')) {
+      } else if (err.status === 429) {
+        setError({
+          title: "Too Many Requests",
+          message: err.message || "You've hit the AI recommendation rate limit. Please wait a minute and try again.",
+        });
+      } else if (err.status === 403) {
+        setError({
+          title: "Access Denied",
+          message: err.message || "Your account isn't authorized to use AI recommendations.",
+        });
+      } else if (err.status >= 500) {
         setError({
           title: "AI Service Unavailable",
-          message: "The AI service is temporarily unavailable. Please try again in a few moments.",
+          message: err.message || "The AI service is temporarily unavailable. Please try again in a few moments.",
         });
-      } else if (err.message?.includes('timeout')) {
+      } else if (err.message?.toLowerCase().includes('timeout')) {
         setError({
           title: "Request Timed Out",
           message: "The request to the AI service timed out. Please check your connection and try again.",
         });
       } else {
+        // Surface the real error text instead of a dead-end generic message -
+        // this is almost always actionable (e.g. a Gemini API error or a
+        // misconfigured server env var) rather than truly unknown.
         setError({
-          title: "An Unknown Error Occurred",
-          message: "An unexpected error occurred while fetching the AI recommendation. Please try again.",
+          title: "Couldn't Generate a Recommendation",
+          message: err.message || "An unexpected error occurred. Please try again.",
         });
       }
       
