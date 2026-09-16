@@ -1,0 +1,107 @@
+{
+      "name": "Issue",
+      "type": "object",
+      "properties": {
+        "problem_type": {
+          "type": "string",
+          "enum": [
+            "slum_watch",
+            "urban_heat_islands",
+            "pollution_zones",
+            "disaster_chaos",
+            "power_deprivation",
+            "crime_mapping",
+            "green_inequality",
+            "transit_gaps",
+            "land_use_violations",
+            "infra_inequality"
+          ],
+          "description": "Type of urban problem being reported"
+        },
+        "title": {
+          "type": "string",
+          "description": "Brief title of the issue"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the issue"
+        },
+        "latitude": {
+          "type": "number",
+          "description": "Location latitude"
+        },
+        "longitude": {
+          "type": "number",
+          "description": "Location longitude"
+        },
+        "address": {
+          "type": "string",
+          "description": "Human readable address"
+        },
+        "image_url": {
+          "type": "string",
+          "description": "URL of uploaded image"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "in_progress",
+            "completed"
+          ],
+          "default": "pending",
+          "description": "Current status of the issue"
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "urgent"
+          ],
+          "default": "medium",
+          "description": "Priority level set by officials"
+        },
+        "ward_number": {
+          "type": "string",
+          "description": "Administrative ward number"
+        },
+        "resolved_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date when issue was resolved"
+        },
+        "assigned_to": {
+          "type": "string",
+          "description": "Official assigned to handle this issue"
+        }
+      },
+      "required": [
+        "problem_type",
+        "title",
+        "description",
+        "latitude",
+        "longitude"
+      ],
+      "rls": {
+        "read": {},
+        "write": {
+          "$or": [
+            {
+              "created_by": "{{user.email}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "data.user_type": "government_official"
+              }
+            }
+          ]
+        }
+      }
+    }
