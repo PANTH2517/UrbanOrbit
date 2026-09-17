@@ -129,6 +129,22 @@
   color: #fff;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--uo-bg);
+}
+
+/* Hide scrollbar chrome everywhere - the native OS scrollbar look clashes
+   with the dark "orbital" theme - while keeping every element's scroll
+   functionality (wheel, trackpad, touch, drag, keyboard) fully intact.
+   This is purely cosmetic: overflow/scrolling itself is untouched. */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge/IE */
+}
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge (Chromium) */
 }
