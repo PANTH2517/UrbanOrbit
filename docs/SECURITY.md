@@ -69,10 +69,28 @@ role from the live ID token — never from anything stored client-side like
 
 ## 3. Citizen identity verification — what's implemented, and what isn't
 
-Citizens verify a real phone number via Firebase Phone Auth (SMS OTP) before
-they can file a report. Firestore rules trust `request.auth.token.phone_number`,
-a claim Firebase itself only sets after a successful OTP confirmation — a
-citizen cannot forge this by editing their own Firestore profile document.
+Citizens verify a real phone number via SMS OTP before they can file a
+report - through [2Factor.in](https://2factor.in), not Firebase Phone Auth.
+Firebase Phone Auth's real-SMS sending requires the Blaze (pay-as-you-go)
+billing plan (`auth/billing-not-enabled` otherwise), which this project
+avoids everywhere else, so this one piece uses a dedicated SMS provider
+instead:
+
+1. `api/sendOtp.js` - verifies the caller's Firebase ID token, rate-limits
+   (3 sends/10 min per account - SMS costs money per send), calls 2Factor's
+   AUTOGEN endpoint, and stores the session id it returns in
+   `otpSessions/{uid}` (Admin-SDK-only, unreachable by any client per
+   `firestore.rules`' default-deny).
+2. `api/verifyOtp.js` - rate-limits (10 attempts/10 min - OTPs are short
+   numeric codes, brute-forceable without a limit), looks up that stored
+   session, and calls 2Factor's VERIFY endpoint. On a match, it sets
+   `phone_verified: true` and `phone_number` as **custom claims** via the
+   Admin SDK - the same trust pattern already used for `role` - then
+   deletes the OTP session.
+3. `firestore.rules`' `isPhoneVerifiedCitizen()` trusts
+   `request.auth.token.phone_verified`, a claim only `api/verifyOtp.js` can
+   set. A citizen can never forge this by editing their own Firestore
+   profile document, same guarantee as before.
 
 **What this is not**: Aadhaar/UIDAI eKYC. Verifying against India's Aadhaar
 system requires the operating entity to be a licensed AUA/KUA
@@ -153,10 +171,11 @@ be bypassed by a modified client):
   per official on `generateRecommendation.js` (covers both interactive use
   and GovernmentReports.jsx's bulk CSV/PDF export), 20 document-link
   mints/minute per admin on `getDocumentUrl.js`, 30 approve/reject/revoke
-  calls/minute per admin on `reviewApplication.js`. This is a floor against a
-  leaked/compromised token being used to burn through the Gemini quota,
-  scrape every applicant's document, or spam the audit log, not a
-  substitute for App Check.
+  calls/minute per admin on `reviewApplication.js`, 3 sends/10 min and 10
+  verify attempts/10 min per account on `sendOtp.js`/`verifyOtp.js`. This is
+  a floor against a leaked/compromised token being used to burn through the
+  Gemini quota, scrape every applicant's document, spam the audit log, run
+  up an SMS bill, or brute-force an OTP, not a substitute for App Check.
 - **Optional error monitoring** (`src/monitoring.js`) — set `VITE_SENTRY_DSN`
   (a free Sentry project) to start receiving real crash reports from
   `ErrorBoundary`. Entirely inert with no env var set; nothing else depends

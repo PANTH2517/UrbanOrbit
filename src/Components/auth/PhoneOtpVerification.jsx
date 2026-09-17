@@ -1,5 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
-import { RecaptchaVerifier, linkWithPhoneNumber } from "firebase/auth";
+import React, { useState } from "react";
 import { auth } from "../../firebase";
 import { User } from "../../entities/User";
 import { Button } from "../ui/button";
@@ -9,14 +8,17 @@ import { Alert, AlertDescription } from "../ui/alert";
 import { AlertCircle, CheckCircle, Phone, ShieldCheck } from "lucide-react";
 
 /**
- * Links a real, SMS-verified phone number to the signed-in Firebase Auth user.
- * This is UrbanOrbit's citizen identity anchor (see docs/SECURITY.md for why
- * this replaces Aadhaar/UIDAI eKYC, which isn't achievable without a licensed
- * AUA/KUA business registration).
+ * Verifies a real phone number for the signed-in Firebase Auth user via
+ * 2Factor.in (api/sendOtp.js / api/verifyOtp.js) - UrbanOrbit's citizen
+ * identity anchor (see docs/SECURITY.md). This intentionally isn't Firebase
+ * Phone Auth: sending real SMS through Firebase requires the Blaze billing
+ * plan (auth/billing-not-enabled otherwise), which this project avoids
+ * everywhere else, so phone verification goes through a 2Factor.in instead.
  *
- * Firestore/Storage security rules trust request.auth.token.phone_number, which
- * Firebase itself only sets once this flow completes - never a client-writable
- * field - so this verification can't be spoofed from the browser.
+ * On a correct code, api/verifyOtp.js sets phone_verified/phone_number as
+ * custom claims via the Admin SDK - the same trust pattern already used for
+ * role - which firestore.rules then trusts and a citizen can never forge by
+ * editing their own Firestore profile document.
  */
 export default function PhoneOtpVerification({ onVerified }) {
   const [phone, setPhone] = useState("");
@@ -24,37 +26,23 @@ export default function PhoneOtpVerification({ onVerified }) {
   const [step, setStep] = useState("phone"); // 'phone' | 'otp' | 'done'
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const confirmationRef = useRef(null);
-  const recaptchaRef = useRef(null);
-
-  // Create the verifier exactly once and reuse/reset it across retries -
-  // instantiating a second RecaptchaVerifier into the same DOM node throws
-  // "reCAPTCHA has already been rendered in this element".
-  useEffect(() => {
-    recaptchaRef.current = new RecaptchaVerifier(auth, "recaptcha-container", {
-      size: "invisible",
-    });
-    return () => {
-      recaptchaRef.current?.clear();
-      recaptchaRef.current = null;
-    };
-  }, []);
-
-  const resetRecaptcha = async () => {
-    try {
-      const widgetId = await recaptchaRef.current?.render();
-      if (widgetId != null && window.grecaptcha) {
-        window.grecaptcha.reset(widgetId);
-      }
-    } catch {
-      // best-effort - a fresh render() on the next submit attempt still works
-    }
-  };
 
   const normalizePhone = (value) => {
     const digits = value.replace(/[^\d+]/g, "");
     if (digits.startsWith("+")) return digits;
     return `+91${digits}`; // default to India country code
+  };
+
+  const callApi = async (path, body) => {
+    const idToken = await auth.currentUser.getIdToken();
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+    return data;
   };
 
   const handleSendOtp = async (e) => {
@@ -69,20 +57,10 @@ export default function PhoneOtpVerification({ onVerified }) {
 
     setIsLoading(true);
     try {
-      const confirmation = await linkWithPhoneNumber(auth.currentUser, fullPhone, recaptchaRef.current);
-      confirmationRef.current = confirmation;
+      await callApi("/api/sendOtp", { phone: fullPhone });
       setStep("otp");
     } catch (err) {
-      if (err.code === "auth/credential-already-in-use" || err.code === "auth/provider-already-linked") {
-        setError("This phone number is already linked to an account.");
-      } else if (err.code === "auth/too-many-requests") {
-        setError("Too many attempts. Please try again later.");
-      } else if (err.code === "auth/invalid-phone-number") {
-        setError("That phone number looks invalid. Double-check the digits.");
-      } else {
-        setError(err.message || "Could not send the verification code.");
-      }
-      await resetRecaptcha();
+      setError(err.message || "Could not send the verification code.");
     }
     setIsLoading(false);
   };
@@ -91,27 +69,19 @@ export default function PhoneOtpVerification({ onVerified }) {
     e.preventDefault();
     setError("");
 
-    if (!/^\d{6}$/.test(otp)) {
-      setError("Enter the 6-digit code sent to your phone.");
+    if (!/^\d{4,6}$/.test(otp)) {
+      setError("Enter the code sent to your phone.");
       return;
     }
 
     setIsLoading(true);
     try {
-      await confirmationRef.current.confirm(otp);
-      await User.upsertProfile({ phone_number: normalizePhone(phone) });
+      await callApi("/api/verifyOtp", { otp });
       await User.refresh();
       setStep("done");
       onVerified?.();
     } catch (err) {
-      if (err.code === "auth/invalid-verification-code") {
-        setError("That code isn't right. Please try again.");
-      } else if (err.code === "auth/code-expired") {
-        setError("That code expired. Request a new one.");
-        setStep("phone");
-      } else {
-        setError(err.message || "Verification failed.");
-      }
+      setError(err.message || "Verification failed.");
     }
     setIsLoading(false);
   };
@@ -129,7 +99,6 @@ export default function PhoneOtpVerification({ onVerified }) {
 
   return (
     <div className="space-y-4">
-      <div id="recaptcha-container" />
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -163,7 +132,7 @@ export default function PhoneOtpVerification({ onVerified }) {
       {step === "otp" && (
         <form onSubmit={handleVerifyOtp} className="space-y-3">
           <Label htmlFor="otp" className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4" /> Enter 6-digit code
+            <ShieldCheck className="w-4 h-4" /> Enter code
           </Label>
           <Input
             id="otp"

@@ -60,7 +60,12 @@ export default function CitizenAuth() {
         }
       }
 
-      if (firebaseUser.phoneNumber) {
+      // Phone verification is tracked via a custom claim (see User.jsx),
+      // not Firebase's own firebaseUser.phoneNumber - that field is never
+      // set now that verification goes through 2Factor.in instead of
+      // Firebase Phone Auth.
+      const me = await User.refresh();
+      if (me.phone_verified) {
         navigate("/CitizenMap");
       } else {
         setStep("phone");

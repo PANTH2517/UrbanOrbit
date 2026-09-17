@@ -21,11 +21,14 @@ service cloud.firestore {
       return isSignedIn() && (role() == 'government_official' || isAdmin());
     }
 
-    // Trust Firebase Auth's own phone_number ID-token claim (set only after a real
-    // SMS OTP verification succeeds) rather than a client-writable Firestore field -
-    // a citizen can never forge this by editing their own profile document.
+    // Trust the phone_verified custom claim - set only by api/verifyOtp.js
+    // (via the Admin SDK) after a real 2Factor.in SMS OTP check succeeds -
+    // rather than a client-writable Firestore field. A citizen can never
+    // forge this by editing their own profile document. (Phone verification
+    // goes through 2Factor rather than Firebase Phone Auth, which requires
+    // the Blaze billing plan to send real SMS - see docs/SECURITY.md.)
     function isPhoneVerifiedCitizen() {
-      return isSignedIn() && request.auth.token.phone_number != null;
+      return isSignedIn() && request.auth.token.phone_verified == true;
     }
 
     function isCanContribute() {
@@ -96,6 +99,12 @@ service cloud.firestore {
     match /auditLog/{entryId} {
       allow read: if isAdmin();
       allow write: if false;
+    }
+
+    // ---- pending phone-OTP sessions: server-only (api/sendOtp.js / api/verifyOtp.js) ----
+
+    match /otpSessions/{uid} {
+      allow read, write: if false;
     }
   }
 }

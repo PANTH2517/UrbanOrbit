@@ -45,10 +45,12 @@ documents.
    web app config from Firebase console → Project settings → General → Your
    apps. Never commit `.env`.
 
-4. **Enable Phone Authentication** in Firebase console → Authentication →
-   Sign-in method (required for citizen phone verification). While
-   developing, add a few "Phone numbers for testing" there too so you don't
-   need to receive real SMS.
+4. **2Factor.in account** (free to sign up, no DLT template needed to start):
+   [2factor.in](https://2factor.in) - dashboard's API Keys section has your
+   key, put it in `.env` (`TWOFACTOR_API_KEY`). Powers citizen phone
+   verification (`api/sendOtp.js`/`api/verifyOtp.js`) - deliberately not
+   Firebase Phone Auth, which requires the Blaze billing plan to send real
+   SMS.
 
 5. **Cloudinary account** (free, no card required):
    [cloudinary.com/users/register/free](https://cloudinary.com/users/register/free).

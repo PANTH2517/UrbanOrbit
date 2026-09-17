@@ -22,6 +22,12 @@ function waitForAuthInit() {
 async function buildUserRecord(firebaseUser, { forceRefresh = false } = {}) {
   const tokenResult = await firebaseUser.getIdTokenResult(forceRefresh);
   const role = tokenResult.claims.role || null;
+  // Phone verification goes through 2Factor.in (api/sendOtp.js /
+  // api/verifyOtp.js), not Firebase Phone Auth - see docs/SECURITY.md for
+  // why. api/verifyOtp.js sets these as custom claims via the Admin SDK on
+  // a correct OTP, the same trust pattern already used for role.
+  const phoneVerified = tokenResult.claims.phone_verified === true;
+  const phoneNumber = tokenResult.claims.phone_number || null;
 
   let profile = {};
   try {
@@ -36,9 +42,8 @@ async function buildUserRecord(firebaseUser, { forceRefresh = false } = {}) {
     uid: firebaseUser.uid,
     email: firebaseUser.email,
     full_name: profile.full_name || firebaseUser.displayName || firebaseUser.email,
-    phone_number: firebaseUser.phoneNumber || profile.phone_number || null,
-    // Authoritative: Firebase Auth only sets this after a real SMS OTP verification.
-    phone_verified: !!firebaseUser.phoneNumber,
+    phone_number: phoneNumber || profile.phone_number || null,
+    phone_verified: phoneVerified,
     role,
     user_type: role === "admin" ? "admin" : role === "government_official" ? "government_official" : "citizen",
   };
