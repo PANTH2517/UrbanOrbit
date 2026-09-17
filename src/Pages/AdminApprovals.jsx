@@ -3,18 +3,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "../Components/ui/card"
 import { Button } from "../Components/ui/button";
 import { Badge } from "../Components/ui/badge";
 import { Alert, AlertDescription } from "../Components/ui/alert";
-import { FileText, ShieldAlert, ScrollText, Terminal, Copy, Check } from "lucide-react";
+import { FileText, ShieldAlert, ScrollText, Terminal, Copy, Check, CheckCircle2, XCircle, ChevronDown, Building2, IdCard, Phone, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 import { OfficialApplication } from "../entities/OfficialApplication";
 import { auth, db } from "../firebase";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { useToast } from "../Components/ui/Toast";
 
 export default function AdminApprovals() {
+  const { showToast } = useToast();
   const [applications, setApplications] = useState([]);
   const [auditLog, setAuditLog] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionError, setActionError] = useState("");
   const [copiedKey, setCopiedKey] = useState(null);
+  const [actingUid, setActingUid] = useState(null);
+  const [showCliFor, setShowCliFor] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -55,6 +59,31 @@ export default function AdminApprovals() {
     }
   };
 
+  const handleReview = async (uid, action) => {
+    let reason;
+    if (action === "reject") {
+      reason = window.prompt("Rejection reason (optional):") || "";
+    }
+    setActingUid(uid);
+    setActionError("");
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch("/api/reviewApplication", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ uid, action, reason }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+      showToast(action === "approve" ? "Official approved." : "Application rejected.", "success");
+      await loadData();
+    } catch (err) {
+      setActionError(err.message || "Action failed.");
+      showToast(err.message || "Action failed.", "error");
+    }
+    setActingUid(null);
+  };
+
   const copyCommand = async (key, command) => {
     try {
       await navigator.clipboard.writeText(command);
@@ -78,16 +107,6 @@ export default function AdminApprovals() {
           <p className="text-slate-400">Review government official applications and audit privileged actions.</p>
         </motion.div>
 
-        <Alert>
-          <Terminal className="h-4 w-4 text-cyan-400" />
-          <AlertDescription className="text-slate-300">
-            Approving/rejecting runs as a command on your own machine (no billing
-            account needed) - copy a command below and run it from the project
-            root, e.g. <code className="font-mono text-xs text-cyan-300">node scripts/admin-cli.js approve &lt;uid&gt;</code>.
-            See <code className="font-mono text-xs text-cyan-300">scripts/admin-cli.js</code> for setup.
-          </AlertDescription>
-        </Alert>
-
         {actionError && (
           <Alert variant="destructive">
             <AlertDescription>{actionError}</AlertDescription>
@@ -104,43 +123,83 @@ export default function AdminApprovals() {
               <p className="text-slate-500 text-sm">No applications waiting for review.</p>
             )}
             {pending.map((app) => (
-              <div key={app.id} className="border border-white/10 rounded-lg p-4 flex flex-col md:flex-row md:items-start justify-between gap-4 bg-white/[0.02]">
-                <div>
-                  <p className="font-semibold text-white">{app.full_name}</p>
-                  <p className="text-sm text-slate-400">{app.email} - {app.department}</p>
-                  <p className="text-xs text-slate-500">Employee ID: {app.employee_id} - Phone: {app.phone_number}</p>
-                  <p className="text-xs text-slate-600 font-mono mt-1">uid: {app.uid}</p>
+              <div key={app.id} className="border border-white/10 rounded-lg p-4 bg-white/[0.02] space-y-3">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-white text-lg">{app.full_name}</p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400">
+                      <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> {app.email}</span>
+                      <span className="flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5" /> {app.department}</span>
+                      <span className="flex items-center gap-1.5"><IdCard className="w-3.5 h-3.5" /> ID: {app.employee_id}</span>
+                      <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> {app.phone_number}</span>
+                    </div>
+                    <p className="text-xs text-slate-600 font-mono">uid: {app.uid}</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => handleViewDocument(app)} className="shrink-0">
+                    <FileText className="w-4 h-4 mr-2" /> View Document
+                  </Button>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                  <Button size="sm" variant="outline" onClick={() => handleViewDocument(app)}>
-                    <FileText className="w-4 h-4 mr-2" /> Document
-                  </Button>
+
+                <div className="flex gap-2 flex-wrap pt-2 border-t border-white/10">
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => copyCommand(`${app.uid}-approve`, `node scripts/admin-cli.js approve ${app.uid}`)}
-                    className="!border-emerald-400/30 !text-emerald-300 hover:!bg-emerald-500/10"
+                    onClick={() => handleReview(app.uid, "approve")}
+                    disabled={actingUid === app.uid}
+                    className="!bg-gradient-to-r !from-emerald-500 !to-teal-500"
                   >
-                    {copiedKey === `${app.uid}-approve` ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                    Copy Approve Command
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    {actingUid === app.uid ? "Approving..." : "Approve"}
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => copyCommand(`${app.uid}-reject`, `node scripts/admin-cli.js reject ${app.uid} "reason"`)}
+                    onClick={() => handleReview(app.uid, "reject")}
+                    disabled={actingUid === app.uid}
                     className="!border-red-400/30 !text-red-300 hover:!bg-red-500/10"
                   >
-                    {copiedKey === `${app.uid}-reject` ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                    Copy Reject Command
+                    <XCircle className="w-4 h-4 mr-2" />
+                    {actingUid === app.uid ? "Rejecting..." : "Reject"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowCliFor(showCliFor === app.uid ? null : app.uid)}
+                    className="text-slate-500 ml-auto"
+                  >
+                    <Terminal className="w-3.5 h-3.5 mr-2" />
+                    CLI alternative
+                    <ChevronDown className={`w-3.5 h-3.5 ml-1 transition-transform ${showCliFor === app.uid ? "rotate-180" : ""}`} />
                   </Button>
                 </div>
+
+                {showCliFor === app.uid && (
+                  <div className="flex gap-2 flex-wrap pt-2 border-t border-white/10">
+                    <p className="text-xs text-slate-500 w-full">
+                      Same result, run from the project root on a machine with{" "}
+                      <code className="font-mono text-cyan-300">serviceAccountKey.json</code> instead:
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyCommand(`${app.uid}-approve`, `node scripts/admin-cli.js approve ${app.uid}`)}
+                      className="!border-emerald-400/30 !text-emerald-300 hover:!bg-emerald-500/10"
+                    >
+                      {copiedKey === `${app.uid}-approve` ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                      Copy Approve Command
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyCommand(`${app.uid}-reject`, `node scripts/admin-cli.js reject ${app.uid} "reason"`)}
+                      className="!border-red-400/30 !text-red-300 hover:!bg-red-500/10"
+                    >
+                      {copiedKey === `${app.uid}-reject` ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                      Copy Reject Command
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
-            {pending.length > 0 && (
-              <Button size="sm" variant="ghost" onClick={loadData}>
-                Refresh after running a command
-              </Button>
-            )}
           </CardContent>
         </Card>
 

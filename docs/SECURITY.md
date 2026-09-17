@@ -93,12 +93,26 @@ official." Instead:
    number, and an authorization document (ID card, appointment letter, etc.)
    uploaded to Cloudinary as a private/authenticated asset (see §1).
 3. A human admin reviews the application and the document at
-   `/AdminApprovals`, then runs `scripts/admin-cli.js approve <uid>` (or
-   `reject`) locally. This is the only path that grants the
-   `government_official` custom claim.
+   `/AdminApprovals` and clicks Approve or Reject there directly - this
+   calls `api/reviewApplication.js` (a Vercel serverless function, same
+   trust model as `scripts/admin-cli.js`: it verifies the caller's ID token
+   carries the `admin` role, then uses the Admin SDK to set the
+   `government_official` custom claim). The CLI commands
+   (`scripts/admin-cli.js approve/reject <uid>`) still work identically as a
+   fallback - useful if you're not near this deployment - and are available
+   behind a "CLI alternative" toggle on each pending application.
 4. Every approval/rejection/revocation is written to the `auditLog`
-   collection by the script itself (never by the client), and is visible in
-   the Admin Approvals audit log view.
+   collection by the Admin SDK itself (never by the client, regardless of
+   which of the two paths above triggered it), and is visible in the Admin
+   Approvals audit log view.
+
+The one admin account itself signs in at `/AdminLogin` - a second entry
+point, deliberately not linked from `/RoleSelection` or `/GovernmentLogin`,
+that only signs in (it never creates an account on a failed attempt, unlike
+`/GovernmentLogin`) and immediately signs back out if the account it just
+verified doesn't already carry the `admin` claim. `scripts/admin-cli.js
+seed-admin <email>` is still the only thing that ever grants that claim in
+the first place.
 
 This is a manual-review model, appropriate for a pilot/launch. If UrbanOrbit
 is formally adopted by a municipal body, the more defensible long-term model
@@ -138,9 +152,11 @@ be bypassed by a modified client):
   any client per `firestore.rules`' default-deny): 60 Gemini calls/minute
   per official on `generateRecommendation.js` (covers both interactive use
   and GovernmentReports.jsx's bulk CSV/PDF export), 20 document-link
-  mints/minute per admin on `getDocumentUrl.js`. This is a floor against a
-  leaked/compromised token being used to burn through the Gemini quota or
-  scrape every applicant's document, not a substitute for App Check.
+  mints/minute per admin on `getDocumentUrl.js`, 30 approve/reject/revoke
+  calls/minute per admin on `reviewApplication.js`. This is a floor against a
+  leaked/compromised token being used to burn through the Gemini quota,
+  scrape every applicant's document, or spam the audit log, not a
+  substitute for App Check.
 - **Optional error monitoring** (`src/monitoring.js`) — set `VITE_SENTRY_DSN`
   (a free Sentry project) to start receiving real crash reports from
   `ErrorBoundary`. Entirely inert with no env var set; nothing else depends
