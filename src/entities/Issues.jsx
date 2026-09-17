@@ -1,5 +1,5 @@
 import { auth, db } from "../firebase";
-import { collection, getDocs, addDoc, updateDoc, doc, query, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, limit, onSnapshot } from "firebase/firestore";
 
 export class Issue {
   static async list() {
@@ -73,6 +73,19 @@ export class Issue {
       return true;
     } catch (e) {
       console.error("Error updating issue:", e);
+      throw e;
+    }
+  }
+
+  /** Admin-only per firestore.rules (allow delete: if isAdmin()) - for
+   * removing a mistakenly-created report. Firestore rejects this call
+   * outright for anyone else, regardless of what the UI shows. */
+  static async delete(id) {
+    try {
+      await deleteDoc(doc(db, "issues", id));
+      return true;
+    } catch (e) {
+      console.error("Error deleting issue:", e);
       throw e;
     }
   }

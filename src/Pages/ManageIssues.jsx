@@ -18,12 +18,15 @@ import {
   TableHeader,
   TableRow,
 } from "../Components/ui/table";
-import { Search, Eye, Sparkles, Filter } from "lucide-react";
+import { Search, Eye, Sparkles, Filter, Trash2 } from "lucide-react";
 import { problemTypes } from "../Components/problems/ProblemSelector";
 import { motion } from "framer-motion";
 import RecommendationDialog from "../Components/government/RecommendationDialog";
+import { User } from "../entities/User";
+import { useToast } from "../Components/ui/Toast";
 
 export default function ManageIssues() {
+  const { showToast } = useToast();
   const [issues, setIssues] = useState([]);
   const [filteredIssues, setFilteredIssues] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,9 +35,17 @@ export default function ManageIssues() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => { loadIssues(); }, []);
   useEffect(() => { filterIssues(); }, [issues, searchTerm, statusFilter, problemFilter]);
+  useEffect(() => {
+    // Delete is admin-only (firestore.rules: allow delete: if isAdmin()) -
+    // this just decides whether to show the button; the rule is what
+    // actually enforces it either way.
+    return User.onChange((user) => setIsAdmin(user?.role === "admin"));
+  }, []);
 
   const loadIssues = async () => {
     setIsLoading(true);
@@ -72,6 +83,19 @@ export default function ManageIssues() {
 
   const handleOpenRecommendation = (issue) => { setSelectedIssue(issue); setIsDialogOpen(true); };
   const handleCloseRecommendation = () => { setSelectedIssue(null); setIsDialogOpen(false); };
+
+  const handleDelete = async (issue) => {
+    if (!window.confirm(`Permanently delete "${issue.title}"? This can't be undone.`)) return;
+    setDeletingId(issue.id);
+    try {
+      await Issue.delete(issue.id);
+      showToast("Issue deleted.", "success");
+      loadIssues();
+    } catch (err) {
+      showToast(err.message || "Failed to delete issue.", "error");
+    }
+    setDeletingId(null);
+  };
 
   const getStatusBadge = (status) => ({
     pending: 'bg-red-500/15 text-red-300 border border-red-400/30',
@@ -228,6 +252,18 @@ export default function ManageIssues() {
                             {issue.image_url && (
                               <Button size="icon" variant="ghost" onClick={() => window.open(issue.image_url, '_blank')} title="View Photo">
                                 <Eye className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {isAdmin && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleDelete(issue)}
+                                disabled={deletingId === issue.id}
+                                title="Delete Issue (admin only)"
+                                className="hover:bg-red-500/10 hover:text-red-400"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </Button>
                             )}
                           </div>
