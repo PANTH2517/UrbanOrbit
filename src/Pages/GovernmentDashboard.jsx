@@ -7,6 +7,7 @@ import { AlertCircle, CheckCircle2, Clock, TrendingUp, Activity } from "lucide-r
 import { motion } from "framer-motion";
 
 import UrbanMap from "../Components/map/MapContainer";
+import ThermalHeatMap from "../Components/map/ThermalHeatMap";
 import ProblemSelector from "../Components/problems/ProblemSelector";
 import { getActiveCity } from "../config/cities";
 
@@ -54,6 +55,12 @@ export default function GovernmentDashboard() {
   issues.forEach(issue => {
     issueStats[issue.problem_type] = (issueStats[issue.problem_type] || 0) + 1;
   });
+
+  // Heat Islands / Green Spaces aren't citizen-reported categories - they're
+  // real NASA satellite proxies (see ThermalHeatMap.jsx). Without this, an
+  // official selecting them here just sees an empty map with zero markers,
+  // unlike CitizenMap.jsx which already shows the satellite overlay.
+  const showThermalMap = selectedProblem === "urban_heat_islands" || selectedProblem === "green_inequality";
 
   return (
     <div className="p-4 md:p-6 min-h-screen text-white">
@@ -131,11 +138,15 @@ export default function GovernmentDashboard() {
               <CardTitle>Issues Map Overview</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <UrbanMap
-                issues={issues}
-                selectedProblem={selectedProblem}
-                height="600px"
-              />
+              {showThermalMap ? (
+                <ThermalHeatMap selectedProblem={selectedProblem} height="600px" />
+              ) : (
+                <UrbanMap
+                  issues={issues}
+                  selectedProblem={selectedProblem}
+                  height="600px"
+                />
+              )}
             </CardContent>
           </Card>
 
