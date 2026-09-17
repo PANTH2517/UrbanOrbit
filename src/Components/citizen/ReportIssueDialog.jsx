@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "../ui/dialog.jsx";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -186,6 +187,7 @@ export default function ReportIssueDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogClose onClose={onClose} />
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-cyan-400" />

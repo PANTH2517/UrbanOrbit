@@ -4,7 +4,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription
+  DialogDescription,
+  DialogClose
 } from "../ui/dialog.jsx";
 import { Button } from "../ui/button";
 import { InvokeLLM } from "../../../integrations/Core.jsx";
@@ -268,6 +269,7 @@ Return your response as a JSON object with exactly three fields: recommendation 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogClose onClose={onClose} />
         <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <div className="p-2 bg-gradient-to-br from-cyan-500 via-blue-600 to-violet-600 rounded-xl shadow-[0_0_20px_rgba(56,242,255,0.35)]">
