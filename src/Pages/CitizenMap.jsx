@@ -177,8 +177,10 @@ export default function CitizenMap() {
           </Card>
         </motion.div>
 
-        {/* Report Dialog */}
-        {canReportIssue && showReportDialog && clickMarker && (
+        {/* Report Dialog - clickMarker may be null here (opened via the
+            "Report Issue" button rather than a map click); ReportIssueDialog
+            already handles that by offering "Use My Current Location". */}
+        {canReportIssue && showReportDialog && (
           <ReportIssueDialog
             isOpen={showReportDialog}
             onClose={handleCloseReport}

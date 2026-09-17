@@ -2,12 +2,21 @@ import { problemTypes } from "../Components/problems/ProblemSelector";
 
 export function buildDailyTrend(issues, days = 14) {
   const buckets = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Bucket boundaries and the per-issue key below must use the same calendar
+  // (UTC) - mixing local-midnight boundaries with UTC-keyed dates silently
+  // misfiles reports near day boundaries for any timezone that isn't UTC+0
+  // (e.g. India, UTC+5:30, where this app actually runs).
+  const now = new Date();
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    buckets.push({ date: d, key: d.toISOString().slice(0, 10), label: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }), reports: 0 });
+    const d = new Date(todayUTC);
+    d.setUTCDate(d.getUTCDate() - i);
+    buckets.push({
+      date: d,
+      key: d.toISOString().slice(0, 10),
+      label: d.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" }),
+      reports: 0,
+    });
   }
   const byKey = Object.fromEntries(buckets.map((b) => [b.key, b]));
   issues.forEach((issue) => {
