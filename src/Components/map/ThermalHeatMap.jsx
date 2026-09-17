@@ -72,6 +72,7 @@ export default function ThermalHeatMap({ selectedProblem, height = "500px" }) {
       <MapContainer
         center={city.center}
         zoom={city.zoom}
+        scrollWheelZoom={false}
         style={{ height: '100%', width: '100%' }}
         className="z-0"
       >

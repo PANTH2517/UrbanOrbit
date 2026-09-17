@@ -96,6 +96,11 @@ export default function UrbanMap({
       <MapContainer
         center={city.center}
         zoom={city.zoom}
+        // Off by default - otherwise scrolling the page while the cursor
+        // happens to pass over the map hijacks the scroll into a map zoom
+        // instead. Zoom is still available via the +/- controls,
+        // double-click, and pinch-to-zoom on touch.
+        scrollWheelZoom={false}
         style={{ height: '100%', width: '100%' }}
         className="z-0"
       >
