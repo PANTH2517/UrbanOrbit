@@ -27,7 +27,10 @@ export default function Layout({ children, currentPageName }) {
     try {
       await User.logout();
     } finally {
-      window.location.href = createPageUrl("Welcome");
+      // The Welcome page's route is "/", not "/Welcome" - createPageUrl()
+      // just concatenates "/" + name, which only works for pages whose
+      // route literally matches their name (see app.jsx's <Route> list).
+      window.location.href = "/";
     }
   };
 
