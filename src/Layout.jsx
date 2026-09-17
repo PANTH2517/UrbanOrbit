@@ -7,7 +7,7 @@ import { Badge } from "./Components/ui/badge";
 import { User } from "./entities/User";
 import StarfieldBackground from "./Components/ui/StarfieldBackground";
 
-const BARE_PAGES = ["Welcome", "RoleSelection", "GovernmentLogin", "CitizenAuth", "GovernmentRegister", "NotFound"];
+const BARE_PAGES = ["Welcome", "RoleSelection", "GovernmentLogin", "AdminLogin", "CitizenAuth", "GovernmentRegister", "NotFound"];
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();

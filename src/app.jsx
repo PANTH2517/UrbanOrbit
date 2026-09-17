@@ -14,6 +14,7 @@ const RoleSelection = lazy(() => import("./Pages/RoleSelection"));
 const CitizenAuth = lazy(() => import("./Pages/CitizenAuth"));
 const CitizenMap = lazy(() => import("./Pages/CitizenMap"));
 const GovernmentLogin = lazy(() => import("./Pages/GovernmentLogin"));
+const AdminLogin = lazy(() => import("./Pages/AdminLogin"));
 const GovernmentRegister = lazy(() => import("./Pages/GovernmentRegister"));
 const GovernmentDashboard = lazy(() => import("./Pages/GovernmentDashboard"));
 const ManageIssues = lazy(() => import("./Pages/ManageIssues"));
@@ -29,6 +30,7 @@ const PAGE_NAMES_BY_PATH = {
   "/CitizenAuth": "CitizenAuth",
   "/CitizenMap": "CitizenMap",
   "/GovernmentLogin": "GovernmentLogin",
+  "/AdminLogin": "AdminLogin",
   "/GovernmentRegister": "GovernmentRegister",
   "/GovernmentDashboard": "GovernmentDashboard",
   "/ManageIssues": "ManageIssues",
@@ -51,6 +53,7 @@ function App() {
             <Route path="/CitizenAuth" element={<CitizenAuth />} />
             <Route path="/CitizenMap" element={<CitizenMap />} />
             <Route path="/GovernmentLogin" element={<GovernmentLogin />} />
+            <Route path="/AdminLogin" element={<AdminLogin />} />
             <Route path="/GovernmentRegister" element={<GovernmentRegister />} />
 
             <Route
