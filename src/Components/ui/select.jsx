@@ -62,10 +62,15 @@ export function SelectValue({ placeholder, children }) {
 
 export function SelectContent({ children, className = "" }) {
   const ctx = useContext(SelectContext);
-  if (!ctx.open) return null;
+  // Always mounted (just hidden via CSS when closed), not conditionally
+  // rendered - SelectItem registers its own display label in a mount
+  // effect, so if this returned null while closed, no label would exist
+  // until the dropdown had been opened at least once. Before that, the
+  // trigger fell back to showing the raw value ("all") instead of its
+  // label ("All Status").
   return (
     <div
-      className={`absolute z-50 mt-1 w-full max-h-64 overflow-auto rounded-lg border border-white/15 bg-[#0d1226]/95 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] py-1 animate-[uo-fade-up_0.15s_ease-out] ${className}`}
+      className={`absolute z-50 mt-1 w-full max-h-64 overflow-auto rounded-lg border border-white/15 bg-[#0d1226]/95 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] py-1 animate-[uo-fade-up_0.15s_ease-out] ${ctx.open ? "" : "hidden"} ${className}`}
     >
       {children}
     </div>
