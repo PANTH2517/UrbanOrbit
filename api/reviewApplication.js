@@ -43,6 +43,18 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    // An admin account can end up with a leftover officialApplications
+    // record from before it was made admin (e.g. it applied as an official
+    // first). Approving/rejecting/revoking that record would silently
+    // overwrite its role claim to government_official (approve) or strip
+    // its role entirely (revoke) - never what's intended - so refuse it
+    // outright rather than letting an admin accidentally demote themselves.
+    const targetUser = await admin.auth(app).getUser(uid);
+    if (targetUser.customClaims?.role === "admin") {
+      res.status(400).json({ error: "This account is already an admin - its role can't be changed here." });
+      return;
+    }
+
     const auditEntry = {
       actor_uid: decodedToken.uid,
       actor_email: decodedToken.email || null,
@@ -51,8 +63,7 @@ module.exports = async function handler(req, res) {
     };
 
     if (action === "approve") {
-      const user = await admin.auth(app).getUser(uid);
-      await admin.auth(app).setCustomUserClaims(uid, { ...(user.customClaims || {}), role: "government_official" });
+      await admin.auth(app).setCustomUserClaims(uid, { ...(targetUser.customClaims || {}), role: "government_official" });
       await appRef.update({ status: "approved", reviewed_at: admin.firestore.FieldValue.serverTimestamp() });
       await db.collection("auditLog").add({ ...auditEntry, action: "approve_official_application", details: null });
     } else if (action === "reject") {
@@ -63,8 +74,7 @@ module.exports = async function handler(req, res) {
       });
       await db.collection("auditLog").add({ ...auditEntry, action: "reject_official_application", details: reason || null });
     } else {
-      const user = await admin.auth(app).getUser(uid);
-      const claims = { ...(user.customClaims || {}) };
+      const claims = { ...(targetUser.customClaims || {}) };
       delete claims.role;
       await admin.auth(app).setCustomUserClaims(uid, claims);
       await appRef.update({ status: "revoked", reviewed_at: admin.firestore.FieldValue.serverTimestamp() });
