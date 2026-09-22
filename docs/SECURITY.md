@@ -69,36 +69,44 @@ role from the live ID token — never from anything stored client-side like
 
 ## 3. Citizen identity verification — what's implemented, and what isn't
 
-Citizens verify a real phone number via SMS OTP before they can file a
-report - through [2Factor.in](https://2factor.in), not Firebase Phone Auth.
-Firebase Phone Auth's real-SMS sending requires the Blaze (pay-as-you-go)
-billing plan (`auth/billing-not-enabled` otherwise), which this project
-avoids everywhere else, so this one piece uses a dedicated SMS provider
-instead:
+Citizens verify they can receive mail at the email they signed up with, via
+a 6-digit code, before they can file a report — **not** phone/SMS. Real SMS
+costs money everywhere (Firebase Phone Auth requires the Blaze
+pay-as-you-go billing plan, `auth/billing-not-enabled` otherwise; every
+third-party SMS API charges per message too), which this project avoids
+everywhere else. Email delivery via Gmail SMTP is genuinely free at this
+app's volume, at an honest cost: **email is a weaker anti-bot signal than a
+real phone number** — an address is free and instant to create in bulk,
+where a phone number carries a real-world cost/registration step. This is
+the deliberate tradeoff of a $0 deployment; swapping in a paid SMS provider
+later is a drop-in change to `api/sendOtp.js`/`api/verifyOtp.js` using the
+exact same claim-based pattern.
 
-1. `api/sendOtp.js` - verifies the caller's Firebase ID token, rate-limits
-   (3 sends/10 min per account - SMS costs money per send), calls 2Factor's
-   AUTOGEN endpoint, and stores the session id it returns in
-   `otpSessions/{uid}` (Admin-SDK-only, unreachable by any client per
-   `firestore.rules`' default-deny).
-2. `api/verifyOtp.js` - rate-limits (10 attempts/10 min - OTPs are short
-   numeric codes, brute-forceable without a limit), looks up that stored
-   session, and calls 2Factor's VERIFY endpoint. On a match, it sets
-   `phone_verified: true` and `phone_number` as **custom claims** via the
-   Admin SDK - the same trust pattern already used for `role` - then
-   deletes the OTP session.
-3. `firestore.rules`' `isPhoneVerifiedCitizen()` trusts
-   `request.auth.token.phone_verified`, a claim only `api/verifyOtp.js` can
-   set. A citizen can never forge this by editing their own Firestore
-   profile document, same guarantee as before.
+1. `api/sendOtp.js` — verifies the caller's Firebase ID token, rate-limits
+   (3 sends/10 min per account), generates a 6-digit code, stores it with a
+   10-minute expiry in `otpSessions/{uid}` (Admin-SDK-only, unreachable by
+   any client per `firestore.rules`' default-deny), and emails it via Gmail
+   SMTP (`api/_lib/mailer.js`) to `request.auth.token.email` — never a
+   client-supplied address, so there's nothing to spoof.
+2. `api/verifyOtp.js` — rate-limits (10 attempts/10 min — OTPs are short
+   numeric codes, brute-forceable without a limit), checks the submitted
+   code against the stored one (and its expiry). On a match, it sets
+   `contact_verified: true` as a **custom claim** via the Admin SDK — the
+   same trust pattern already used for `role` — then deletes the OTP
+   session.
+3. `firestore.rules`' `isVerifiedCitizen()` trusts
+   `request.auth.token.contact_verified`, a claim only `api/verifyOtp.js`
+   can set. A citizen can never forge this by editing their own Firestore
+   profile document.
 
 **What this is not**: Aadhaar/UIDAI eKYC. Verifying against India's Aadhaar
 system requires the operating entity to be a licensed AUA/KUA
 (Authentication User Agency / KYC User Agency) registered with UIDAI — a
 business and legal registration process, not something achievable purely in
-application code. If/when the project pursues that licensing, the phone-OTP
-step in `src/Components/auth/PhoneOtpVerification.jsx` is the natural place to
-add (or require in addition) a licensed KYC provider integration.
+application code. If/when the project pursues that licensing, the
+verification step in `src/Components/auth/EmailOtpVerification.jsx` is the
+natural place to add (or require in addition) a licensed KYC provider
+integration.
 
 ## 4. Government official verification — what's implemented, and what isn't
 
@@ -174,8 +182,8 @@ be bypassed by a modified client):
   calls/minute per admin on `reviewApplication.js`, 3 sends/10 min and 10
   verify attempts/10 min per account on `sendOtp.js`/`verifyOtp.js`. This is
   a floor against a leaked/compromised token being used to burn through the
-  Gemini quota, scrape every applicant's document, spam the audit log, run
-  up an SMS bill, or brute-force an OTP, not a substitute for App Check.
+  Gemini quota, scrape every applicant's document, spam the audit log, spam
+  an inbox, or brute-force an OTP, not a substitute for App Check.
 - **Optional error monitoring** (`src/monitoring.js`) — set `VITE_SENTRY_DSN`
   (a free Sentry project) to start receiving real crash reports from
   `ErrorBoundary`. Entirely inert with no env var set; nothing else depends

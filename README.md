@@ -45,12 +45,15 @@ documents.
    web app config from Firebase console → Project settings → General → Your
    apps. Never commit `.env`.
 
-4. **2Factor.in account** (free to sign up, no DLT template needed to start):
-   [2factor.in](https://2factor.in) - dashboard's API Keys section has your
-   key, put it in `.env` (`TWOFACTOR_API_KEY`). Powers citizen phone
-   verification (`api/sendOtp.js`/`api/verifyOtp.js`) - deliberately not
-   Firebase Phone Auth, which requires the Blaze billing plan to send real
-   SMS.
+4. **A Gmail account for sending OTP emails** (genuinely free): enable
+   2-Step Verification on it, then generate an App Password at
+   [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+   (App: Mail, Device: Other) - your regular Gmail password won't work here.
+   Put the address and the 16-character App Password in `.env`
+   (`GMAIL_USER`, `GMAIL_APP_PASSWORD`). Powers citizen identity
+   verification (`api/sendOtp.js`/`api/verifyOtp.js`) - deliberately email,
+   not SMS: real SMS costs money everywhere (Firebase Phone Auth requires
+   the Blaze billing plan), which this project avoids.
 
 5. **Cloudinary account** (free, no card required):
    [cloudinary.com/users/register/free](https://cloudinary.com/users/register/free).

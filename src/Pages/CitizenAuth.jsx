@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "../firebase";
 import { User } from "../entities/User";
-import PhoneOtpVerification from "../Components/auth/PhoneOtpVerification";
+import EmailOtpVerification from "../Components/auth/EmailOtpVerification";
 import StarfieldBackground from "../Components/ui/StarfieldBackground";
 
 export default function CitizenAuth() {
@@ -19,7 +19,7 @@ export default function CitizenAuth() {
   const [formData, setFormData] = useState({ full_name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState("credentials"); // 'credentials' | 'phone'
+  const [step, setStep] = useState("credentials"); // 'credentials' | 'verify'
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -60,15 +60,14 @@ export default function CitizenAuth() {
         }
       }
 
-      // Phone verification is tracked via a custom claim (see User.jsx),
-      // not Firebase's own firebaseUser.phoneNumber - that field is never
-      // set now that verification goes through 2Factor.in instead of
-      // Firebase Phone Auth.
+      // Verification status lives in a custom claim (see User.jsx) - always
+      // re-check it fresh rather than assuming an unverified state, so a
+      // returning already-verified citizen isn't sent through this again.
       const me = await User.refresh();
-      if (me.phone_verified) {
+      if (me.contact_verified) {
         navigate("/CitizenMap");
       } else {
-        setStep("phone");
+        setStep("verify");
       }
     } catch (err) {
       if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
@@ -97,18 +96,18 @@ export default function CitizenAuth() {
           <Card>
             <CardHeader className="text-center pb-6">
               <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(56,242,255,0.35)]">
-                {step === "phone" ? (
+                {step === "verify" ? (
                   <ShieldCheck className="w-8 h-8 text-white" />
                 ) : (
                   <UserIcon className="w-8 h-8 text-white" />
                 )}
               </div>
               <CardTitle className="text-2xl font-bold text-white">
-                {step === "phone" ? "Verify Your Phone" : "Welcome, Citizen!"}
+                {step === "verify" ? "Verify Your Email" : "Welcome, Citizen!"}
               </CardTitle>
               <p className="text-slate-400">
-                {step === "phone"
-                  ? "One more step - confirm a real phone number so your reports carry real weight."
+                {step === "verify"
+                  ? "One more step - confirm your email so your reports carry real weight."
                   : "Create an UrbanOrbit account to report issues in your city"}
               </p>
             </CardHeader>
@@ -175,8 +174,8 @@ export default function CitizenAuth() {
                 </>
               )}
 
-              {step === "phone" && (
-                <PhoneOtpVerification onVerified={() => navigate("/CitizenMap")} />
+              {step === "verify" && (
+                <EmailOtpVerification onVerified={() => navigate("/CitizenMap")} />
               )}
 
               <div className="text-center">
