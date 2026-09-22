@@ -2,21 +2,17 @@ import React, { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../Components/ui/button";
 import StarfieldBackground from "../Components/ui/StarfieldBackground";
-import {
-  Satellite,
-  ArrowRight,
-  MapPin,
-  BarChart3,
-  Shield,
-  Radio,
-  ChevronDown,
-  Camera,
-  ListChecks,
-  CheckCircle2,
-} from "lucide-react";
+import { ArrowRight, Radio, ChevronDown, CheckCircle2 } from "lucide-react";
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
 import { getActiveCity } from "../config/cities";
 import useSmoothScroll from "../Components/useSmoothScroll";
+import OrbitHero from "../Components/welcome/OrbitHero";
+import StepsConnector from "../Components/welcome/StepsConnector";
+import {
+  PinDropIllustration,
+  SatelliteDataIllustration,
+  ShieldIllustration,
+} from "../Components/welcome/FeatureIllustrations";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -56,7 +52,7 @@ function MagneticButton({ children, className = "", onClick }) {
 }
 
 function FeatureRow({ feature, reverse, index }) {
-  const Icon = feature.icon;
+  const Illustration = feature.Illustration;
   return (
     <motion.div
       initial={{ opacity: 0, y: 60 }}
@@ -70,13 +66,9 @@ function FeatureRow({ feature, reverse, index }) {
         whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
         viewport={{ once: true, amount: 0.4 }}
         transition={{ duration: 0.8, delay: 0.1, ease: EASE }}
-        className="shrink-0"
+        className="shrink-0 w-40 h-40 md:w-48 md:h-48"
       >
-        <div
-          className={`w-32 h-32 md:w-40 md:h-40 rounded-3xl flex items-center justify-center shadow-[0_0_60px_rgba(56,242,255,0.25)] bg-gradient-to-br ${feature.gradient}`}
-        >
-          <Icon className="w-14 h-14 md:w-16 md:h-16 text-white" />
-        </div>
+        <Illustration />
       </motion.div>
       <div className="text-center md:text-left">
         <span className="text-xs font-semibold tracking-widest text-cyan-400 uppercase">
@@ -133,22 +125,19 @@ export default function Welcome() {
 
   const features = [
     {
-      icon: MapPin,
+      Illustration: PinDropIllustration,
       title: "Report in Seconds",
       desc: `Drop a pin anywhere in ${city.name}, add a photo, and your report goes live on the public map instantly.`,
-      gradient: "from-cyan-400 via-blue-500 to-blue-600",
     },
     {
-      icon: BarChart3,
+      Illustration: SatelliteDataIllustration,
       title: "Real Satellite Data",
       desc: "Heat-island and green-cover views pull directly from NASA MODIS/Terra imagery - genuine remote-sensing data, not a guess.",
-      gradient: "from-violet-400 via-purple-500 to-fuchsia-600",
     },
     {
-      icon: Shield,
+      Illustration: ShieldIllustration,
       title: "Verified Officials Only",
       desc: "Every government account is manually reviewed and approved by an admin before it can touch a single report.",
-      gradient: "from-blue-400 via-indigo-500 to-violet-600",
     },
   ];
 
@@ -169,21 +158,8 @@ export default function Welcome() {
         className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center overflow-hidden"
       >
         <motion.div style={{ opacity: heroOpacity, scale: heroScale, y: heroY }} className="max-w-4xl mx-auto">
-          <motion.div style={{ x: orbitX, y: orbitY }} className="relative w-56 h-56 mx-auto mb-10">
-            <div className="absolute inset-0 rounded-full border border-cyan-400/20 animate-uo-orbit-slow" />
-            <div className="absolute inset-6 rounded-full border border-violet-400/20 animate-uo-orbit-reverse" />
-            <div className="absolute inset-12 rounded-full border border-blue-400/15 animate-uo-orbit-slow" style={{ animationDuration: "26s" }} />
-            <div className="absolute inset-0 animate-uo-orbit">
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_12px_4px_rgba(56,242,255,0.6)]" />
-            </div>
-            <div className="absolute inset-6 animate-uo-orbit-reverse" style={{ animationDuration: "16s" }}>
-              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-violet-400 shadow-[0_0_10px_4px_rgba(162,89,255,0.6)]" />
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-600 to-violet-600 flex items-center justify-center shadow-[0_0_60px_rgba(77,123,255,0.5)] animate-uo-float">
-                <Satellite className="w-12 h-12 text-white" />
-              </div>
-            </div>
+          <motion.div style={{ x: orbitX, y: orbitY }} className="relative w-64 h-64 md:w-72 md:h-72 mx-auto mb-10">
+            <OrbitHero />
           </motion.div>
 
           <motion.h1
@@ -251,10 +227,13 @@ export default function Welcome() {
             <p className="text-slate-400 text-lg">Three steps. Full transparency, start to finish.</p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {steps.map((step, i) => (
-              <StepCard key={step.num} step={step} index={i} />
-            ))}
+          <div className="relative">
+            <StepsConnector />
+            <div className="grid md:grid-cols-3 gap-6">
+              {steps.map((step, i) => (
+                <StepCard key={step.num} step={step} index={i} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
