@@ -69,7 +69,7 @@ export default function Layout({ children, currentPageName }) {
     user?.role === "admin" ? "Admin" : user?.role === "government_official" ? "Verified Official" : "Citizen";
 
   return (
-    <div className="min-h-screen flex w-full relative text-white">
+    <div className="h-screen flex w-full relative text-white overflow-hidden">
       <StarfieldBackground density={70} />
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex md:flex-col md:w-64 border-r border-white/10 bg-[#070a16]/70 backdrop-blur-xl relative z-10">
