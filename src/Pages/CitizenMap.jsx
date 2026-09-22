@@ -50,7 +50,7 @@ export default function CitizenMap() {
   };
 
   const handleMapClick = (e) => {
-    if (!selectedProblem || selectedProblem === 'urban_heat_islands' || selectedProblem === 'green_inequality') return;
+    if (selectedProblem === 'urban_heat_islands' || selectedProblem === 'green_inequality') return;
     const { lat, lng } = e.latlng;
     setClickMarker({ lat, lng });
     setShowReportDialog(true);
@@ -79,7 +79,13 @@ export default function CitizenMap() {
   };
 
   const showThermalMap = selectedProblem === 'urban_heat_islands' || selectedProblem === 'green_inequality';
-  const canReportIssue = selectedProblem && !showThermalMap;
+  // Reporting is available whenever a real, reportable view is showing -
+  // including "All Problems" (selectedProblem === null), not just when a
+  // specific category is picked. ReportIssueDialog has its own Problem Type
+  // dropdown, so nothing upstream needs a category pre-selected to report.
+  // Only the two satellite-data-only views (Heat Islands, Green Spaces)
+  // aren't real citizen-report categories, so those are excluded.
+  const canReportIssue = !showThermalMap;
   const totalIssues = issues.length;
 
   return (
