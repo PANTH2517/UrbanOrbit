@@ -76,12 +76,13 @@ documents.
    firebase deploy --only firestore:rules
    ```
 
-7. **Bootstrap the first admin**: sign in through `/GovernmentLogin` using the
-   email hardcoded as `SUPER_ADMIN_EMAIL` in `scripts/admin-cli.js`
-   (`dhggaming49@gmail.com`), then on `/GovernmentRegister` copy and run the
-   `seed-admin` command it shows you. After that, all further officials are
-   reviewed at `/AdminApprovals` (which gives you copy-pasteable
-   `admin-cli.js approve/reject` commands per application).
+7. **Bootstrap the first admin**: set `VITE_SUPER_ADMIN_EMAIL` (locally in
+   `.env`, and in Vercel project settings for the real deployment) to the
+   email that should see the one-time setup hint. Sign in through
+   `/GovernmentLogin` with that email, then on `/GovernmentRegister` copy
+   and run the `seed-admin` command it shows you. After that, all further
+   officials are reviewed at `/AdminApprovals` (which gives you
+   copy-pasteable `admin-cli.js approve/reject` commands per application).
 
 8. **AI recommendations** (optional): create a Gemini API key at
    [Google AI Studio](https://aistudio.google.com/apikey) and put it in

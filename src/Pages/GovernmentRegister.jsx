@@ -17,7 +17,7 @@ import StarfieldBackground from "../Components/ui/StarfieldBackground";
 import useSmoothScroll from "../Components/useSmoothScroll";
 import ClipboardBadge from "../Components/vector/ClipboardBadge";
 
-const SUPER_ADMIN_EMAIL = "dhggaming49@gmail.com";
+const SUPER_ADMIN_EMAIL = (import.meta.env.VITE_SUPER_ADMIN_EMAIL || "").toLowerCase();
 
 export default function GovernmentRegister() {
   useSmoothScroll();
