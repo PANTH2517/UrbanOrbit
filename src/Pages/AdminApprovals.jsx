@@ -9,6 +9,7 @@ import { OfficialApplication } from "../entities/OfficialApplication";
 import { auth, db } from "../firebase";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { useToast } from "../Components/ui/Toast";
+import AllClearBadge from "../Components/vector/AllClearBadge";
 
 export default function AdminApprovals() {
   const { showToast } = useToast();
@@ -120,7 +121,10 @@ export default function AdminApprovals() {
           <CardContent className="space-y-4">
             {isLoading && <p className="text-slate-500 text-sm">Loading...</p>}
             {!isLoading && pending.length === 0 && (
-              <p className="text-slate-500 text-sm">No applications waiting for review.</p>
+              <div className="py-4 text-center">
+                <AllClearBadge />
+                <p className="text-slate-500 text-sm mt-2">No applications waiting for review.</p>
+              </div>
             )}
             {pending.map((app) => (
               <div key={app.id} className="border border-white/10 rounded-lg p-4 bg-white/[0.02] space-y-3">

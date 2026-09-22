@@ -24,6 +24,7 @@ import { motion } from "framer-motion";
 import RecommendationDialog from "../Components/government/RecommendationDialog";
 import { User } from "../entities/User";
 import { useToast } from "../Components/ui/Toast";
+import AllClearBadge from "../Components/vector/AllClearBadge";
 
 export default function ManageIssues() {
   const { showToast } = useToast();
@@ -166,6 +167,12 @@ export default function ManageIssues() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.6 }}>
           <Card>
             <CardContent className="p-0">
+              {!isLoading && filteredIssues.length === 0 ? (
+                <div className="py-12 text-center">
+                  <AllClearBadge />
+                  <p className="text-slate-500 text-sm mt-2">No issues match your filters.</p>
+                </div>
+              ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -273,6 +280,7 @@ export default function ManageIssues() {
                   </TableBody>
                 </Table>
               </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
