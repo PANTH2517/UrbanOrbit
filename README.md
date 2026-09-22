@@ -76,12 +76,14 @@ documents.
    firebase deploy --only firestore:rules
    ```
 
-7. **Bootstrap the first admin**: set `VITE_SUPER_ADMIN_EMAIL` (locally in
-   `.env`, and in Vercel project settings for the real deployment) to the
-   email that should see the one-time setup hint. Sign in through
-   `/GovernmentLogin` with that email, then on `/GovernmentRegister` copy
-   and run the `seed-admin` command it shows you. After that, all further
-   officials are reviewed at `/AdminApprovals` (which gives you
+7. **Bootstrap the first admin**: set `SUPER_ADMIN_EMAIL` (locally in `.env`,
+   and in Vercel project settings for the real deployment - deliberately
+   not `VITE_`-prefixed, so it never ships to the browser; `api/checkSuperAdmin.js`
+   is the only thing that reads it, and only ever returns a yes/no to the
+   client) to the email that should see the one-time setup hint. Sign in
+   through `/GovernmentLogin` with that email, then on `/GovernmentRegister`
+   copy and run the `seed-admin` command it shows you. After that, all
+   further officials are reviewed at `/AdminApprovals` (which gives you
    copy-pasteable `admin-cli.js approve/reject` commands per application).
 
 8. **AI recommendations** (optional): create a Gemini API key at

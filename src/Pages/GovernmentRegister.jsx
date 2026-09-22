@@ -17,14 +17,13 @@ import StarfieldBackground from "../Components/ui/StarfieldBackground";
 import useSmoothScroll from "../Components/useSmoothScroll";
 import ClipboardBadge from "../Components/vector/ClipboardBadge";
 
-const SUPER_ADMIN_EMAIL = (import.meta.env.VITE_SUPER_ADMIN_EMAIL || "").toLowerCase();
-
 export default function GovernmentRegister() {
   useSmoothScroll();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [application, setApplication] = useState(null);
   const [isSuperAdminEmail, setIsSuperAdminEmail] = useState(false);
+  const [myEmail, setMyEmail] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({ full_name: "", department: "", employee_id: "", phone_number: "" });
@@ -49,7 +48,18 @@ export default function GovernmentRegister() {
         navigate("/GovernmentLogin");
         return;
       }
-      setIsSuperAdminEmail((me.email || "").toLowerCase() === SUPER_ADMIN_EMAIL);
+      setMyEmail(me.email || "");
+      try {
+        const idToken = await auth.currentUser.getIdToken();
+        const res = await fetch("/api/checkSuperAdmin", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!cancelled) setIsSuperAdminEmail(Boolean(data.isSuperAdmin));
+      } catch {
+        // Non-critical - worst case the one-time setup hint just doesn't show.
+      }
       const existing = await OfficialApplication.getMine();
       if (cancelled) return;
       setApplication(existing);
@@ -91,7 +101,11 @@ export default function GovernmentRegister() {
   };
 
   const handleCopySeedCommand = async () => {
-    const command = `node scripts/admin-cli.js seed-admin ${SUPER_ADMIN_EMAIL}`;
+    // isSuperAdminEmail is only ever true for the signed-in account itself
+    // (verified server-side in api/checkSuperAdmin.js), so myEmail - the
+    // caller's own address - is exactly the configured super-admin email
+    // without the client ever needing to know that value directly.
+    const command = `node scripts/admin-cli.js seed-admin ${myEmail}`;
     try {
       await navigator.clipboard.writeText(command);
       setCopied(true);
