@@ -39,7 +39,7 @@ export class Issue {
   static async create(data) {
     const user = auth.currentUser;
     if (!user) {
-      throw new Error("Please sign in and verify your email before reporting an issue.");
+      throw new Error("Please sign in before reporting an issue.");
     }
 
     try {

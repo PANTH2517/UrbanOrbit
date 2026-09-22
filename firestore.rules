@@ -21,19 +21,13 @@ service cloud.firestore {
       return isSignedIn() && (role() == 'government_official' || isAdmin());
     }
 
-    // Trust the contact_verified custom claim - set only by api/verifyOtp.js
-    // (via the Admin SDK) after a real emailed OTP check succeeds - rather
-    // than a client-writable Firestore field. A citizen can never forge
-    // this by editing their own profile document. (Verification goes
-    // through email rather than phone/SMS, which costs money everywhere -
-    // Firebase Phone Auth requires the Blaze billing plan - see
-    // docs/SECURITY.md for the honest tradeoff this makes.)
-    function isVerifiedCitizen() {
-      return isSignedIn() && request.auth.token.contact_verified == true;
-    }
-
+    // Any signed-in account (citizen or official) can contribute a report -
+    // by project-owner choice, there's no separate identity-verification
+    // step beyond having a real email/password account. See
+    // docs/SECURITY.md for the tradeoff this makes and what was tried
+    // instead (phone OTP, email OTP) before landing here.
     function isCanContribute() {
-      return isVerifiedCitizen() || isOfficial();
+      return isSignedIn();
     }
 
     // ---- issues: the public civic reports -------------------------------
@@ -100,12 +94,6 @@ service cloud.firestore {
     match /auditLog/{entryId} {
       allow read: if isAdmin();
       allow write: if false;
-    }
-
-    // ---- pending email-OTP sessions: server-only (api/sendOtp.js / api/verifyOtp.js) ----
-
-    match /otpSessions/{uid} {
-      allow read, write: if false;
     }
   }
 }

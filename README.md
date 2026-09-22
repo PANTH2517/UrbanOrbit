@@ -45,17 +45,7 @@ documents.
    web app config from Firebase console → Project settings → General → Your
    apps. Never commit `.env`.
 
-4. **A Gmail account for sending OTP emails** (genuinely free): enable
-   2-Step Verification on it, then generate an App Password at
-   [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
-   (App: Mail, Device: Other) - your regular Gmail password won't work here.
-   Put the address and the 16-character App Password in `.env`
-   (`GMAIL_USER`, `GMAIL_APP_PASSWORD`). Powers citizen identity
-   verification (`api/sendOtp.js`/`api/verifyOtp.js`) - deliberately email,
-   not SMS: real SMS costs money everywhere (Firebase Phone Auth requires
-   the Blaze billing plan), which this project avoids.
-
-5. **Cloudinary account** (free, no card required):
+4. **Cloudinary account** (free, no card required):
    [cloudinary.com/users/register/free](https://cloudinary.com/users/register/free).
    - Dashboard home page shows your **Cloud name**, **API Key**, and
      **API Secret** - put these in `.env` (`VITE_CLOUDINARY_CLOUD_NAME`,
@@ -69,7 +59,7 @@ documents.
      files" delivery is restricted, and allow it (recent Cloudinary accounts
      restrict this by default).
 
-6. **Service account key** (for `scripts/admin-cli.js` and the two `api/*.js`
+5. **Service account key** (for `scripts/admin-cli.js` and the two `api/*.js`
    functions): Firebase console → Project settings → Service accounts →
    **Generate new private key**. Save the downloaded file as
    `serviceAccountKey.json` in the project root - it's already gitignored,
@@ -78,7 +68,7 @@ documents.
    env var (locally in `.env`, and in the Vercel project settings for the
    real deployment).
 
-7. **Deploy Firestore rules** (requires `firebase login` first, run
+6. **Deploy Firestore rules** (requires `firebase login` first, run
    interactively in your own terminal - not through an automated/non-TTY
    shell, since it needs a browser popup):
    ```
@@ -86,14 +76,14 @@ documents.
    firebase deploy --only firestore:rules
    ```
 
-8. **Bootstrap the first admin**: sign in through `/GovernmentLogin` using the
+7. **Bootstrap the first admin**: sign in through `/GovernmentLogin` using the
    email hardcoded as `SUPER_ADMIN_EMAIL` in `scripts/admin-cli.js`
    (`dhggaming49@gmail.com`), then on `/GovernmentRegister` copy and run the
    `seed-admin` command it shows you. After that, all further officials are
    reviewed at `/AdminApprovals` (which gives you copy-pasteable
    `admin-cli.js approve/reject` commands per application).
 
-9. **AI recommendations** (optional): create a Gemini API key at
+8. **AI recommendations** (optional): create a Gemini API key at
    [Google AI Studio](https://aistudio.google.com/apikey) and put it in
    `GEMINI_API_KEY` (locally in `.env`, and in Vercel project settings for
    the real deployment).

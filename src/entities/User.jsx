@@ -22,12 +22,6 @@ function waitForAuthInit() {
 async function buildUserRecord(firebaseUser, { forceRefresh = false } = {}) {
   const tokenResult = await firebaseUser.getIdTokenResult(forceRefresh);
   const role = tokenResult.claims.role || null;
-  // Citizen identity verification is email-based (api/sendOtp.js /
-  // api/verifyOtp.js send/check a code via Gmail SMTP) rather than
-  // phone/SMS - see docs/SECURITY.md for why. api/verifyOtp.js sets this as
-  // a custom claim via the Admin SDK on a correct code, the same trust
-  // pattern already used for role.
-  const contactVerified = tokenResult.claims.contact_verified === true;
 
   let profile = {};
   try {
@@ -42,7 +36,6 @@ async function buildUserRecord(firebaseUser, { forceRefresh = false } = {}) {
     uid: firebaseUser.uid,
     email: firebaseUser.email,
     full_name: profile.full_name || firebaseUser.displayName || firebaseUser.email,
-    contact_verified: contactVerified,
     role,
     user_type: role === "admin" ? "admin" : role === "government_official" ? "government_official" : "citizen",
   };

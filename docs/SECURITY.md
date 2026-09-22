@@ -13,9 +13,9 @@ billing account (Firebase Blaze, or otherwise):
 
 - **Cloud Firestore** (Spark/free plan) — the primary database (`issues`,
   `users`, `officialApplications`, `auditLog` collections).
-- **Firebase Authentication** (Spark/free plan) — email/password accounts for
-  both citizens and government officials, plus SMS phone verification for
-  citizens.
+- **Firebase Authentication** (Spark/free plan) — plain email/password
+  accounts for both citizens and government officials (see §3 for the
+  identity-verification tradeoff this makes for citizens specifically).
 - **Cloudinary** (free tier, not Firebase Storage) — issue photos and
   official-application documents. As of late 2024, new Firebase Storage
   buckets require the Blaze billing plan even on an otherwise-free project,
@@ -69,54 +69,48 @@ role from the live ID token — never from anything stored client-side like
 
 ## 3. Citizen identity verification — what's implemented, and what isn't
 
-Citizen sign-in is passwordless and email-only: enter an email, get a
-6-digit code, enter the code, done — no name, no password, ever
-(`src/Pages/CitizenAuth.jsx`). This is deliberately **not** phone/SMS. Real
-SMS costs money everywhere (Firebase Phone Auth requires the Blaze
-pay-as-you-go billing plan, `auth/billing-not-enabled` otherwise; every
-third-party SMS API charges per message too), which this project avoids
-everywhere else. Email delivery via Gmail SMTP is genuinely free at this
-app's volume, at an honest cost: **email is a weaker anti-bot signal than a
-real phone number** — an address is free and instant to create in bulk,
-where a phone number carries a real-world cost/registration step. This is
-the deliberate tradeoff of a $0 deployment; swapping in a paid SMS provider
-later is a drop-in change to `api/sendOtp.js`/`api/verifyOtp.js` using the
-exact same claim-based pattern.
+Citizen sign-in is plain Firebase Auth email + password
+(`src/Pages/CitizenAuth.jsx`: a Login tab and a Register tab), with
+"Forgot password" via Firebase's own built-in `sendPasswordResetEmail` —
+Firebase sends that email itself, no custom mail infrastructure needed.
 
-1. `api/sendOtp.js` — takes just an email (no session exists yet at this
-   point, so there's nothing to authenticate). Resolves it to a Firebase
-   Auth user, creating one with no password if it doesn't exist yet.
-   Rate-limits (3 sends/10 min per resolved account, not per request, so
-   repeated attempts against the same citizen are what's actually
-   throttled), generates a 6-digit code, stores it with a 10-minute expiry
-   in `otpSessions/{uid}` (Admin-SDK-only, unreachable by any client per
-   `firestore.rules`' default-deny), and emails it via Gmail SMTP
-   (`api/_lib/mailer.js`).
-2. `api/verifyOtp.js` — also takes no session; rate-limits (10 attempts/10
-   min — OTPs are short numeric codes, brute-forceable without a limit),
-   checks the submitted code against the stored one (and its expiry). On a
-   match, it sets `contact_verified: true` as a **custom claim** via the
-   Admin SDK — the same trust pattern already used for `role` — deletes the
-   OTP session, and mints a Firebase **custom token** so the client can
-   actually establish a session (`signInWithCustomToken`) despite no
-   password ever existing.
-3. `firestore.rules`' `isVerifiedCitizen()` trusts
-   `request.auth.token.contact_verified`, a claim only `api/verifyOtp.js`
-   can set. A citizen can never forge this by editing their own Firestore
-   profile document.
+**This project tried three progressively simpler approaches before landing
+here**, each abandoned for a concrete reason rather than by choice, worth
+recording so the tradeoff is understood rather than assumed:
 
-Because `sendOtp`/`verifyOtp` are necessarily reachable pre-login, App
-Check (§6) is what stands between them and a scripted client hammering the
-endpoint or mass-creating throwaway accounts, rather than a bearer token
-check like every other `api/*.js` function has.
+1. **Firebase Phone Auth (SMS OTP)** — the original design. Blocked outright:
+   sending real SMS requires the Blaze pay-as-you-go billing plan
+   (`auth/billing-not-enabled`), which this project avoids everywhere else.
+2. **2Factor.in (SMS OTP via a third-party API)** — worked in principle, but
+   its default route sent a *voice call* rather than a text on the
+   maintainer's number (common when a number is DND-registered in India,
+   which blocks generic transactional SMS), and a real fix needed a
+   DLT-approved template requiring business paperwork.
+3. **Email OTP via Gmail SMTP** (a custom 6-digit code, `contact_verified`
+   custom claim) — genuinely free and worked end-to-end, but the maintainer
+   decided the added infrastructure (Gmail App Passwords, a dedicated
+   sending account) and failure modes (two App Passwords rejected by Gmail
+   before one worked) weren't worth it for this project's needs versus
+   plain email/password.
 
-**What this is not**: Aadhaar/UIDAI eKYC. Verifying against India's Aadhaar
-system requires the operating entity to be a licensed AUA/KUA
-(Authentication User Agency / KYC User Agency) registered with UIDAI — a
-business and legal registration process, not something achievable purely in
-application code. If/when the project pursues that licensing, the
-verification step in `src/Pages/CitizenAuth.jsx` is the natural place to
-add (or require in addition) a licensed KYC provider integration.
+**What this means in practice**: any account with a real email/password
+carries the same privileges — there is currently no step that confirms a
+citizen can be reached at a real phone number or a real inbox. This is a
+**meaningfully weaker anti-bot/anti-throwaway-account signal** than any of
+the three approaches above; it's a deliberate simplicity-over-verification
+tradeoff by the project owner, not an oversight. `firestore.rules`'
+`isCanContribute()` reflects this honestly (`isSignedIn()`, full stop). If
+stronger identity assurance is needed later — before a real municipal
+launch, say — reintroducing an OTP step is a contained change: add a claim,
+check it in `isCanContribute()`, gate `CitizenAuth.jsx`'s post-auth
+redirect on it, same shape as approach 3 above (still in git history if
+useful as a reference).
+
+**What this is not, regardless of which of the above is active**:
+Aadhaar/UIDAI eKYC. Verifying against India's Aadhaar system requires the
+operating entity to be a licensed AUA/KUA (Authentication User Agency / KYC
+User Agency) registered with UIDAI — a business and legal registration
+process, not something achievable purely in application code.
 
 ## 4. Government official verification — what's implemented, and what isn't
 
@@ -189,11 +183,10 @@ be bypassed by a modified client):
   per official on `generateRecommendation.js` (covers both interactive use
   and GovernmentReports.jsx's bulk CSV/PDF export), 20 document-link
   mints/minute per admin on `getDocumentUrl.js`, 30 approve/reject/revoke
-  calls/minute per admin on `reviewApplication.js`, 3 sends/10 min and 10
-  verify attempts/10 min per account on `sendOtp.js`/`verifyOtp.js`. This is
-  a floor against a leaked/compromised token being used to burn through the
-  Gemini quota, scrape every applicant's document, spam the audit log, spam
-  an inbox, or brute-force an OTP, not a substitute for App Check.
+  calls/minute per admin on `reviewApplication.js`. This is a floor against
+  a leaked/compromised token being used to burn through the Gemini quota,
+  scrape every applicant's document, or spam the audit log, not a
+  substitute for App Check.
 - **Optional error monitoring** (`src/monitoring.js`) — set `VITE_SENTRY_DSN`
   (a free Sentry project) to start receiving real crash reports from
   `ErrorBoundary`. Entirely inert with no env var set; nothing else depends
