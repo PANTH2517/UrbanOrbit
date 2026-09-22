@@ -65,7 +65,7 @@ export default function CitizenMap() {
     } catch (err) {
       console.error("Failed to report issue", err);
       if (err.code === "permission-denied" || err.message?.includes("sign in")) {
-        showToast("Please sign in and verify your phone number before reporting an issue.", "warning");
+        showToast("Please sign in and verify your email before reporting an issue.", "warning");
         navigate("/CitizenAuth");
       } else {
         showToast("Failed to submit report. Please try again.", "error");

@@ -69,9 +69,10 @@ role from the live ID token — never from anything stored client-side like
 
 ## 3. Citizen identity verification — what's implemented, and what isn't
 
-Citizens verify they can receive mail at the email they signed up with, via
-a 6-digit code, before they can file a report — **not** phone/SMS. Real SMS
-costs money everywhere (Firebase Phone Auth requires the Blaze
+Citizen sign-in is passwordless and email-only: enter an email, get a
+6-digit code, enter the code, done — no name, no password, ever
+(`src/Pages/CitizenAuth.jsx`). This is deliberately **not** phone/SMS. Real
+SMS costs money everywhere (Firebase Phone Auth requires the Blaze
 pay-as-you-go billing plan, `auth/billing-not-enabled` otherwise; every
 third-party SMS API charges per message too), which this project avoids
 everywhere else. Email delivery via Gmail SMTP is genuinely free at this
@@ -82,31 +83,40 @@ the deliberate tradeoff of a $0 deployment; swapping in a paid SMS provider
 later is a drop-in change to `api/sendOtp.js`/`api/verifyOtp.js` using the
 exact same claim-based pattern.
 
-1. `api/sendOtp.js` — verifies the caller's Firebase ID token, rate-limits
-   (3 sends/10 min per account), generates a 6-digit code, stores it with a
-   10-minute expiry in `otpSessions/{uid}` (Admin-SDK-only, unreachable by
-   any client per `firestore.rules`' default-deny), and emails it via Gmail
-   SMTP (`api/_lib/mailer.js`) to `request.auth.token.email` — never a
-   client-supplied address, so there's nothing to spoof.
-2. `api/verifyOtp.js` — rate-limits (10 attempts/10 min — OTPs are short
-   numeric codes, brute-forceable without a limit), checks the submitted
-   code against the stored one (and its expiry). On a match, it sets
-   `contact_verified: true` as a **custom claim** via the Admin SDK — the
-   same trust pattern already used for `role` — then deletes the OTP
-   session.
+1. `api/sendOtp.js` — takes just an email (no session exists yet at this
+   point, so there's nothing to authenticate). Resolves it to a Firebase
+   Auth user, creating one with no password if it doesn't exist yet.
+   Rate-limits (3 sends/10 min per resolved account, not per request, so
+   repeated attempts against the same citizen are what's actually
+   throttled), generates a 6-digit code, stores it with a 10-minute expiry
+   in `otpSessions/{uid}` (Admin-SDK-only, unreachable by any client per
+   `firestore.rules`' default-deny), and emails it via Gmail SMTP
+   (`api/_lib/mailer.js`).
+2. `api/verifyOtp.js` — also takes no session; rate-limits (10 attempts/10
+   min — OTPs are short numeric codes, brute-forceable without a limit),
+   checks the submitted code against the stored one (and its expiry). On a
+   match, it sets `contact_verified: true` as a **custom claim** via the
+   Admin SDK — the same trust pattern already used for `role` — deletes the
+   OTP session, and mints a Firebase **custom token** so the client can
+   actually establish a session (`signInWithCustomToken`) despite no
+   password ever existing.
 3. `firestore.rules`' `isVerifiedCitizen()` trusts
    `request.auth.token.contact_verified`, a claim only `api/verifyOtp.js`
    can set. A citizen can never forge this by editing their own Firestore
    profile document.
+
+Because `sendOtp`/`verifyOtp` are necessarily reachable pre-login, App
+Check (§6) is what stands between them and a scripted client hammering the
+endpoint or mass-creating throwaway accounts, rather than a bearer token
+check like every other `api/*.js` function has.
 
 **What this is not**: Aadhaar/UIDAI eKYC. Verifying against India's Aadhaar
 system requires the operating entity to be a licensed AUA/KUA
 (Authentication User Agency / KYC User Agency) registered with UIDAI — a
 business and legal registration process, not something achievable purely in
 application code. If/when the project pursues that licensing, the
-verification step in `src/Components/auth/EmailOtpVerification.jsx` is the
-natural place to add (or require in addition) a licensed KYC provider
-integration.
+verification step in `src/Pages/CitizenAuth.jsx` is the natural place to
+add (or require in addition) a licensed KYC provider integration.
 
 ## 4. Government official verification — what's implemented, and what isn't
 

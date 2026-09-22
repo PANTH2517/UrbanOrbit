@@ -67,7 +67,7 @@ export default function RoleSelection() {
                 </Button>
 
                 <p className="text-slate-500 text-xs text-center mt-4">
-                  Free to browse • Phone verification required to report issues
+                  Free to browse • Email verification required to report issues
                 </p>
               </CardContent>
             </Card>
