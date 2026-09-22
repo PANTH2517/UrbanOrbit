@@ -129,9 +129,9 @@
   color: #fff;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+/* No `scroll-behavior: smooth` here - Lenis (see useSmoothScroll.js) owns
+   smooth scrolling on the pages that use it, and native CSS smooth-scroll
+   fights it (double-smoothing/jank) on those pages. */
 
 body {
   background: var(--uo-bg);
