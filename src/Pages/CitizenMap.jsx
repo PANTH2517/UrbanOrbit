@@ -7,9 +7,10 @@ import AnimatedCounter from "../Components/ui/AnimatedCounter";
 import LiveActivityFeed, { LiveBadge } from "../Components/ui/LiveActivityFeed";
 import { Plus, MapPin, Thermometer, Activity } from "lucide-react";
 import { motion } from "framer-motion";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../Components/ui/select";
 
 import UrbanMap from "../Components/map/MapContainer";
-import ProblemSelector from "../Components/problems/ProblemSelector";
+import { problemTypes } from "../Components/problems/ProblemSelector";
 import ReportIssueDialog from "../Components/citizen/ReportIssueDialog";
 import ThermalHeatMap from "../Components/map/ThermalHeatMap";
 import { useToast } from "../Components/ui/Toast";
@@ -88,96 +89,108 @@ export default function CitizenMap() {
   const canReportIssue = !showThermalMap;
   const totalIssues = issues.length;
 
+  const selectedMeta = problemTypes.find((p) => p.id === selectedProblem);
+
   return (
-    <div className="p-4 md:p-6 min-h-screen text-white">
-      <div className="max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 text-white h-full flex flex-col">
+      <div className="max-w-7xl mx-auto w-full flex flex-col flex-1 min-h-0">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4"
+          className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-3"
         >
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold mb-1 flex items-center gap-3">
               Citizen Dashboard
               <LiveBadge />
             </h1>
-            <p className="text-slate-400">
+            <p className="text-sm text-slate-400">
               Interactive map showing real-time urban problems and citizen reports -{" "}
               <span className="text-cyan-300 font-semibold"><AnimatedCounter value={totalIssues} /></span> reports tracked
             </p>
           </div>
 
           {canReportIssue && (
-            <Button size="lg" onClick={() => setShowReportDialog(true)} className="uo-glow-btn">
+            <Button onClick={() => setShowReportDialog(true)} className="uo-glow-btn">
               <Plus className="w-5 h-5 mr-2" />
               Report Issue
             </Button>
           )}
-
-          {showThermalMap && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 border border-orange-400/30 rounded-xl">
-              <Thermometer className="w-5 h-5 text-orange-400" />
-              <span className="text-orange-300 font-medium">Thermal Data View</span>
-            </div>
-          )}
         </motion.div>
 
-        {/* Problem Selector */}
+        {/* Compact problem-type filter */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+          className="flex flex-wrap items-center gap-3 mb-4"
         >
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-cyan-400" /> Select Problem Type
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ProblemSelector
-                selectedProblem={selectedProblem}
-                onProblemSelect={setSelectedProblem}
-                issueStats={issueStats}
-                layout="grid"
-              />
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-2 text-sm text-slate-400 shrink-0">
+            <MapPin className="w-4 h-4 text-cyan-400" /> Filter:
+          </div>
+          <Select value={selectedProblem || "all"} onValueChange={(v) => setSelectedProblem(v === "all" ? null : v)}>
+            <SelectTrigger className="w-64">
+              <SelectValue>
+                <span className="flex items-center gap-2">
+                  <span>{selectedMeta?.icon || "🌍"}</span>
+                  {selectedMeta?.label || "All Problems"}
+                  <span className="text-slate-500">
+                    ({selectedMeta ? issueStats[selectedMeta.id] || 0 : totalIssues})
+                  </span>
+                </span>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">🌍 All Problems ({totalIssues})</SelectItem>
+              {problemTypes.map((problem) => (
+                <SelectItem key={problem.id} value={problem.id}>
+                  {problem.icon} {problem.label} ({issueStats[problem.id] || 0})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {showThermalMap && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-400/30 rounded-xl text-sm">
+              <Thermometer className="w-4 h-4 text-orange-400" />
+              <span className="text-orange-300 font-medium">Thermal Data View</span>
+            </div>
+          )}
         </motion.div>
 
         {/* Map + Live Activity */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0"
         >
-          <Card className="overflow-hidden lg:col-span-2">
-            <CardContent className="p-0">
+          <Card className="overflow-hidden lg:col-span-2 flex flex-col">
+            <CardContent className="p-0 flex-1 min-h-0">
               {showThermalMap ? (
-                <ThermalHeatMap selectedProblem={selectedProblem} height="600px" />
+                <ThermalHeatMap selectedProblem={selectedProblem} height="100%" />
               ) : (
                 <UrbanMap
                   issues={issues}
                   selectedProblem={selectedProblem}
                   onMapClick={handleMapClick}
                   clickMarker={clickMarker}
-                  height="600px"
+                  height="100%"
                   showLegend={false}
                 />
               )}
             </CardContent>
           </Card>
 
-          <Card className="lg:col-span-1">
+          <Card className="lg:col-span-1 flex flex-col min-h-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="w-5 h-5 text-cyan-400" /> Live Activity
               </CardTitle>
             </CardHeader>
-            <CardContent className="max-h-[600px] overflow-y-auto">
+            <CardContent className="flex-1 min-h-0 overflow-y-auto">
               <LiveActivityFeed />
             </CardContent>
           </Card>
