@@ -4,10 +4,14 @@ import { createPageUrl } from "../utils";
 import { Button } from "../Components/ui/button";
 import { Card, CardContent } from "../Components/ui/card";
 import StarfieldBackground from "../Components/ui/StarfieldBackground";
-import { Users, Shield, ArrowRight, MapPin, BarChart3, FileText, Eye, Settings } from "lucide-react";
+import { ArrowRight, MapPin, BarChart3, FileText, Eye, Settings, Shield } from "lucide-react";
 import { motion } from "framer-motion";
+import useSmoothScroll from "../Components/useSmoothScroll";
+import PersonBadge from "../Components/vector/PersonBadge";
+import { ShieldIllustration } from "../Components/welcome/FeatureIllustrations";
 
 export default function RoleSelection() {
+  useSmoothScroll();
   const navigate = useNavigate();
 
   return (
@@ -40,8 +44,8 @@ export default function RoleSelection() {
             <Card className="group h-full">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(56,242,255,0.35)] group-hover:shadow-[0_0_44px_rgba(56,242,255,0.55)] transition-shadow">
-                    <Users className="w-8 h-8 text-white" />
+                  <div className="w-20 h-20 mx-auto mb-2">
+                    <PersonBadge />
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">I am a Citizen</h2>
                   <p className="text-slate-400 mb-6">Report issues, view data, and track progress in your city</p>
@@ -83,8 +87,8 @@ export default function RoleSelection() {
             <Card className="group h-full">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-violet-400 to-fuchsia-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(162,89,255,0.35)] group-hover:shadow-[0_0_44px_rgba(162,89,255,0.55)] transition-shadow">
-                    <Shield className="w-8 h-8 text-white" />
+                  <div className="w-20 h-20 mx-auto mb-2">
+                    <ShieldIllustration />
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">I am a Government Official</h2>
                   <p className="text-slate-400 mb-6">Manage issues, update status, and export detailed reports</p>

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../Components/ui/card"
 import { Input } from "../Components/ui/input";
 import { Label } from "../Components/ui/label";
 import { Alert, AlertDescription } from "../Components/ui/alert";
-import { User as UserIcon, ArrowLeft, AlertCircle, Mail, Lock, CheckCircle } from "lucide-react";
+import { ArrowLeft, AlertCircle, Mail, Lock, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   createUserWithEmailAndPassword,
@@ -15,12 +15,15 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 import StarfieldBackground from "../Components/ui/StarfieldBackground";
+import useSmoothScroll from "../Components/useSmoothScroll";
+import PersonBadge from "../Components/vector/PersonBadge";
 
 /** Plain email + password citizen sign-in - a Register tab and a Login tab,
  * plus "Forgot password" via Firebase's own built-in password-reset email
  * (sendPasswordResetEmail - no custom email infrastructure needed for that,
  * Firebase sends it directly). No phone/email OTP step. */
 export default function CitizenAuth() {
+  useSmoothScroll();
   const navigate = useNavigate();
   const [tab, setTab] = useState("login"); // 'login' | 'register'
   const [email, setEmail] = useState("");
@@ -133,8 +136,8 @@ export default function CitizenAuth() {
         >
           <Card>
             <CardHeader className="text-center pb-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(56,242,255,0.35)]">
-                <UserIcon className="w-8 h-8 text-white" />
+              <div className="w-20 h-20 mx-auto mb-2">
+                <PersonBadge />
               </div>
               <CardTitle className="text-2xl font-bold text-white">Citizen Access</CardTitle>
               <p className="text-slate-400">Report issues in your city</p>

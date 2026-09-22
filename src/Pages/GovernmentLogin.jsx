@@ -7,13 +7,16 @@ import { Input } from "../Components/ui/input";
 import { Label } from "../Components/ui/label";
 import { Alert, AlertDescription } from "../Components/ui/alert";
 import StarfieldBackground from "../Components/ui/StarfieldBackground";
-import { Shield, Lock, Mail, ArrowLeft, AlertCircle } from "lucide-react";
+import { Lock, Mail, ArrowLeft, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 import { User } from "../entities/User";
+import useSmoothScroll from "../Components/useSmoothScroll";
+import { ShieldIllustration } from "../Components/welcome/FeatureIllustrations";
 
 export default function GovernmentLogin() {
+  useSmoothScroll();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -84,8 +87,8 @@ export default function GovernmentLogin() {
         >
           <Card>
             <CardHeader className="text-center pb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-violet-400 to-fuchsia-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(162,89,255,0.35)]">
-                <Shield className="w-8 h-8 text-white" />
+              <div className="w-20 h-20 mx-auto mb-2">
+                <ShieldIllustration />
               </div>
               <CardTitle className="text-2xl font-bold text-white">
                 Government Portal

@@ -6,7 +6,7 @@ import { Input } from "../Components/ui/input";
 import { Label } from "../Components/ui/label";
 import { Alert, AlertDescription } from "../Components/ui/alert";
 import { Badge } from "../Components/ui/badge";
-import { ClipboardList, Upload, ArrowLeft, AlertCircle, Clock, CheckCircle2, XCircle, KeyRound, Copy, Check, RefreshCw, LogOut } from "lucide-react";
+import { Upload, ArrowLeft, AlertCircle, Clock, CheckCircle2, XCircle, KeyRound, Copy, Check, RefreshCw, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { auth } from "../firebase";
 import { UploadOfficialDocument } from "../../integrations/Core.jsx";
@@ -14,10 +14,13 @@ import { OfficialApplication } from "../entities/OfficialApplication";
 import { User } from "../entities/User";
 import { createPageUrl } from "../utils";
 import StarfieldBackground from "../Components/ui/StarfieldBackground";
+import useSmoothScroll from "../Components/useSmoothScroll";
+import ClipboardBadge from "../Components/vector/ClipboardBadge";
 
 const SUPER_ADMIN_EMAIL = "dhggaming49@gmail.com";
 
 export default function GovernmentRegister() {
+  useSmoothScroll();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [application, setApplication] = useState(null);
@@ -142,8 +145,8 @@ export default function GovernmentRegister() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card>
             <CardHeader className="text-center pb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-violet-400 to-fuchsia-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(162,89,255,0.35)]">
-                <ClipboardList className="w-8 h-8 text-white" />
+              <div className="w-20 h-20 mx-auto mb-2">
+                <ClipboardBadge />
               </div>
               <CardTitle className="text-2xl font-bold text-white">Official Verification</CardTitle>
               <p className="text-slate-400">

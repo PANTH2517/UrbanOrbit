@@ -6,11 +6,13 @@ import { Input } from "../Components/ui/input";
 import { Label } from "../Components/ui/label";
 import { Alert, AlertDescription } from "../Components/ui/alert";
 import StarfieldBackground from "../Components/ui/StarfieldBackground";
-import { KeyRound, Lock, Mail, AlertCircle } from "lucide-react";
+import { Lock, Mail, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { User } from "../entities/User";
+import useSmoothScroll from "../Components/useSmoothScroll";
+import KeyBadge from "../Components/vector/KeyBadge";
 
 // Deliberately unlinked from RoleSelection/GovernmentLogin - reachable only
 // by URL. Unlike GovernmentLogin.jsx, this NEVER creates an account on a
@@ -20,6 +22,7 @@ import { User } from "../entities/User";
 // out if it doesn't. This is a second entry point, not a second way to
 // become an admin.
 export default function AdminLogin() {
+  useSmoothScroll();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -78,8 +81,8 @@ export default function AdminLogin() {
         >
           <Card>
             <CardHeader className="text-center pb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(251,191,36,0.35)]">
-                <KeyRound className="w-8 h-8 text-white" />
+              <div className="w-20 h-20 mx-auto mb-2">
+                <KeyBadge />
               </div>
               <CardTitle className="text-2xl font-bold text-white">Admin Access</CardTitle>
               <p className="text-slate-400">Restricted to the platform administrator.</p>
