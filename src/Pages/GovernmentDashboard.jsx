@@ -3,12 +3,13 @@ import { Issue } from "../entities/Issues";
 import { Card, CardContent, CardHeader, CardTitle } from "../Components/ui/card";
 import AnimatedCounter from "../Components/ui/AnimatedCounter";
 import LiveActivityFeed, { LiveBadge } from "../Components/ui/LiveActivityFeed";
-import { AlertCircle, CheckCircle2, Clock, TrendingUp, Activity } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, TrendingUp, Activity, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../Components/ui/select";
 
 import UrbanMap from "../Components/map/MapContainer";
 import ThermalHeatMap from "../Components/map/ThermalHeatMap";
-import ProblemSelector from "../Components/problems/ProblemSelector";
+import { problemTypes } from "../Components/problems/ProblemSelector";
 import { getActiveCity } from "../config/cities";
 
 const STAT_CARDS = [
@@ -61,22 +62,24 @@ export default function GovernmentDashboard() {
   // official selecting them here just sees an empty map with zero markers,
   // unlike CitizenMap.jsx which already shows the satellite overlay.
   const showThermalMap = selectedProblem === "urban_heat_islands" || selectedProblem === "green_inequality";
+  const selectedMeta = problemTypes.find((p) => p.id === selectedProblem);
+  const totalIssues = issues.length;
 
   return (
-    <div className="p-4 md:p-6 min-h-screen text-white">
-      <div className="max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 text-white h-full flex flex-col">
+      <div className="max-w-7xl mx-auto w-full flex flex-col flex-1 min-h-0">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-8"
+          className="mb-3"
         >
-          <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-bold mb-1 flex items-center gap-3">
             Government <span className="uo-gradient-text">Dashboard</span>
             <LiveBadge />
           </h1>
-          <p className="text-slate-400">
+          <p className="text-sm text-slate-400">
             Monitor and manage urban issues across {getActiveCity().name}
           </p>
         </motion.div>
@@ -85,78 +88,90 @@ export default function GovernmentDashboard() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+          transition={{ delay: 0.15, duration: 0.5 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"
         >
           {STAT_CARDS.map((card) => (
             <Card key={card.key} className={card.glow}>
-              <CardContent className="p-6">
+              <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-400">{card.label}</p>
-                    <p className="text-3xl font-bold text-white">
+                    <p className="text-xs font-medium text-slate-400">{card.label}</p>
+                    <p className="text-2xl font-bold text-white">
                       <AnimatedCounter value={stats[card.key]} />
                     </p>
                   </div>
-                  <card.icon className={`w-8 h-8 ${card.color}`} />
+                  <card.icon className={`w-6 h-6 ${card.color}`} />
                 </div>
               </CardContent>
             </Card>
           ))}
         </motion.div>
 
-        {/* Problem Selector */}
+        {/* Compact problem-type filter */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
+          transition={{ delay: 0.25, duration: 0.5 }}
+          className="flex flex-wrap items-center gap-3 mb-4"
         >
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Filter by Problem Type</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ProblemSelector
-                selectedProblem={selectedProblem}
-                onProblemSelect={setSelectedProblem}
-                issueStats={issueStats}
-                layout="tabs"
-              />
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-2 text-sm text-slate-400 shrink-0">
+            <MapPin className="w-4 h-4 text-cyan-400" /> Filter:
+          </div>
+          <Select value={selectedProblem || "all"} onValueChange={(v) => setSelectedProblem(v === "all" ? null : v)}>
+            <SelectTrigger className="w-64">
+              <SelectValue>
+                <span className="flex items-center gap-2">
+                  <span>{selectedMeta?.icon || "🌍"}</span>
+                  {selectedMeta?.label || "All Problems"}
+                  <span className="text-slate-500">
+                    ({selectedMeta ? issueStats[selectedMeta.id] || 0 : totalIssues})
+                  </span>
+                </span>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">🌍 All Problems ({totalIssues})</SelectItem>
+              {problemTypes.map((problem) => (
+                <SelectItem key={problem.id} value={problem.id}>
+                  {problem.icon} {problem.label} ({issueStats[problem.id] || 0})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </motion.div>
 
         {/* Map + Live Activity */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.6 }}
-          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+          transition={{ delay: 0.35, duration: 0.5 }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0"
         >
-          <Card className="overflow-hidden lg:col-span-2">
+          <Card className="overflow-hidden lg:col-span-2 flex flex-col">
             <CardHeader>
               <CardTitle>Issues Map Overview</CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 flex-1 min-h-0">
               {showThermalMap ? (
-                <ThermalHeatMap selectedProblem={selectedProblem} height="600px" />
+                <ThermalHeatMap selectedProblem={selectedProblem} height="100%" />
               ) : (
                 <UrbanMap
                   issues={issues}
                   selectedProblem={selectedProblem}
-                  height="600px"
+                  height="100%"
                 />
               )}
             </CardContent>
           </Card>
 
-          <Card className="lg:col-span-1">
+          <Card className="lg:col-span-1 flex flex-col min-h-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="w-5 h-5 text-cyan-400" /> Live Activity
               </CardTitle>
             </CardHeader>
-            <CardContent className="max-h-[600px] overflow-y-auto">
+            <CardContent className="flex-1 min-h-0 overflow-y-auto">
               <LiveActivityFeed />
             </CardContent>
           </Card>
